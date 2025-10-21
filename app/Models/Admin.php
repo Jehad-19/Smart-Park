@@ -8,7 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable
+class Admin extends Authenticatable
 {
     use HasFactory, Notifiable, HasApiTokens, SoftDeletes;
 
@@ -17,6 +17,7 @@ class User extends Authenticatable
         'email',
         'phone',
         'password',
+        'employee_number',
         'is_active',
     ];
 
@@ -28,25 +29,8 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
         ];
-    }
-
-    // Relationships
-    public function wallet()
-    {
-        return $this->hasOne(Wallet::class);
-    }
-
-    public function vehicles()
-    {
-        return $this->hasMany(Vehicle::class);
-    }
-
-    public function bookings()
-    {
-        return $this->hasMany(Booking::class);
     }
 }
