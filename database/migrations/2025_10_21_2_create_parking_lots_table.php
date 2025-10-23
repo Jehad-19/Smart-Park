@@ -17,7 +17,6 @@ return new class extends Migration
             $table->decimal('longitude', 10, 7);
             $table->decimal('price_per_minute', 8, 2);
             $table->boolean('is_active')->default(true);
-            $table->softDeletes();
             $table->timestamps();
 
             $table->index('is_active');

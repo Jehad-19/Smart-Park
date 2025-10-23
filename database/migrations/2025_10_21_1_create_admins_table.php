@@ -17,7 +17,6 @@ return new class extends Migration
             $table->string('employee_number')->unique();
             $table->boolean('is_active')->default(true);
             $table->rememberToken();
-            $table->softDeletes();
             $table->timestamps();
 
             $table->index('email');
