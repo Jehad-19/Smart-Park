@@ -17,7 +17,7 @@ return new class extends Migration
             $table->dateTime('end_time');
             $table->integer('duration_minutes')->nullable();
             $table->decimal('total_price', 8, 2)->nullable();
-            $table->enum('status', ['pending', 'active', 'completed', 'cancelled', 'expired'])->default('pending');
+            $table->enum('status', ['pending', 'active', 'completed', 'expired'])->default('pending');
             $table->timestamps();
 
             $table->index('user_id');
