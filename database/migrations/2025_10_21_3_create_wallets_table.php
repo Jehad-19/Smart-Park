@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('user_id')->unique()->constrained('users')->cascadeOnDelete();
             $table->decimal('balance', 10, 2)->default(0);
             $table->enum('currency', ['LYD', 'USD'])->default('LYD');
-            $table->boolean('is_active')->default(true);
+            $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
 
             $table->index('is_active');

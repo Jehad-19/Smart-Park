@@ -10,14 +10,14 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasApiTokens, SoftDeletes;
+    use HasFactory, Notifiable, HasApiTokens;
 
     protected $fillable = [
         'name',
         'email',
         'phone',
         'password',
-        'is_active',
+        'status',
     ];
 
     protected $hidden = [
@@ -28,9 +28,7 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'is_active' => 'boolean',
         ];
     }
 

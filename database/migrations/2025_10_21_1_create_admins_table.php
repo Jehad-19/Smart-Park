@@ -15,12 +15,12 @@ return new class extends Migration
             $table->string('phone')->unique();
             $table->string('password');
             $table->string('employee_number')->unique();
-            $table->boolean('is_active')->default(true);
+            $table->enum('status', ['active', 'inactive'])->default('active');
             $table->rememberToken();
             $table->timestamps();
 
             $table->index('email');
-            $table->index('is_active');
+            $table->index('status');
         });
     }
 

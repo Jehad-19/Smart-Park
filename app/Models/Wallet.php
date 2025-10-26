@@ -13,14 +13,13 @@ class Wallet extends Model
         'user_id',
         'balance',
         'currency',
-        'is_active',
+        'status',
     ];
 
     protected function casts(): array
     {
         return [
             'balance' => 'decimal:2',
-            'is_active' => 'boolean',
         ];
     }
 

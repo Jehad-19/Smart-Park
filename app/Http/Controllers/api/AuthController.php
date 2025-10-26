@@ -89,8 +89,9 @@ class AuthController extends BaseApiController
                     'name' => $data['name'],
                     'email' => $data['email'],
                     'phone' => $data['phone'],
-                    'password' => Hash::make($data['password']),
-                    'is_active' => true, // تفعيل الحساب مباشرة
+                    'password' => bcrypt($data['password']),
+                    'fcm_token' => $data['fcm_token'] ?? null,
+                    'status' => 'active',
                 ]);
                 Wallet::create(['user_id' => $user->id]);
             });
@@ -126,7 +127,7 @@ class AuthController extends BaseApiController
                 return $this->sendError('البريد الإلكتروني أو كلمة المرور غير صحيحة.', [], 401);
             }
 
-            if (!$user->is_active) {
+            if (!$user->status || $user->status !== 'active') {
                 return $this->sendError('حسابك معطل. يرجى الاتصال بالدعم الفني.', [], 403);
             }
 
