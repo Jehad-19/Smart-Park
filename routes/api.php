@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\api\AuthController;
 use App\Http\Controllers\api\UserController;
+use App\Http\Controllers\api\WalletController;
 
 // --- Auth Routes ---
 Route::prefix('auth')->group(function () {
@@ -31,6 +32,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/update-email/request', [UserController::class, 'requestEmailUpdate']);
         Route::post('/update-email/verify', [UserController::class, 'verifyEmailUpdate']);
         Route::delete('/account', [UserController::class, 'deleteAccount']);
+    });
+
+    Route::prefix('wallet')->group(function () {
+        Route::get('/balance', [WalletController::class, 'balance']);
+        Route::post('/deposit', [WalletController::class, 'deposit']);
+        Route::get('/transactions', [WalletController::class, 'transactions']);
+        Route::get('/transactions/{id}', [WalletController::class, 'transactionDetails']);
     });
 });
 

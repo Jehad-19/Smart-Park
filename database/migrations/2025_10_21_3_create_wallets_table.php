@@ -16,7 +16,7 @@ return new class extends Migration
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
 
-            $table->index('is_active');
+            $table->index('status');
         });
     }
 
