@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\api\AuthController;
 use App\Http\Controllers\api\UserController;
 use App\Http\Controllers\api\WalletController;
+use App\Http\Controllers\Api\VehicleController;
+
 
 // --- Auth Routes ---
 Route::prefix('auth')->group(function () {
@@ -39,6 +41,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/deposit', [WalletController::class, 'deposit']);
         Route::get('/transactions', [WalletController::class, 'transactions']);
         Route::get('/transactions/{id}', [WalletController::class, 'transactionDetails']);
+    });
+
+
+    // مسارات السيارات (محمية بـ auth:sanctum)
+    Route::prefix('vehicles')->group(function () {
+        Route::get('/', [VehicleController::class, 'index']);
+        Route::post('/', [VehicleController::class, 'store']);
+        Route::get('/{id}', [VehicleController::class, 'show']);
+        Route::put('/{id}', [VehicleController::class, 'update']);
+        Route::delete('/{id}', [VehicleController::class, 'destroy']);
     });
 });
 

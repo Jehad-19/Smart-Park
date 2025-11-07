@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->string('plate_number')->unique();
+            $table->string('brand')->nullable();
             $table->string('model')->nullable();
             $table->timestamps();
 

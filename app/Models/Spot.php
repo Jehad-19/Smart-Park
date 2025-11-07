@@ -13,13 +13,13 @@ class Spot extends Model
         'parking_lot_id',
         'spot_number',
         'type',
-        'is_available',
+        'status',
     ];
 
     protected function casts(): array
     {
         return [
-            'is_available' => 'boolean',
+            'status' => 'enum',
         ];
     }
 

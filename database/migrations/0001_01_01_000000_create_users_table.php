@@ -18,6 +18,8 @@ return new class extends Migration
             $table->string('phone')->unique();
             $table->string('password');
             $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->decimal('latitude', 10, 7)->nullable()->after('phone');
+            $table->decimal('longitude', 10, 7)->nullable()->after('latitude');
             $table->rememberToken();
             $table->timestamps();
 

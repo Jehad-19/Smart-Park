@@ -127,15 +127,23 @@ class AuthController extends BaseApiController
                 return $this->sendError('البريد الإلكتروني أو كلمة المرور غير صحيحة.', [], 401);
             }
 
-            if (!$user->status || $user->status !== 'active') {
+            if ($user->status !== 'active') {
                 return $this->sendError('حسابك معطل. يرجى الاتصال بالدعم الفني.', [], 403);
             }
 
+            // ✅ حفظ الموقع (اختياري في Login)
+            if ($request->has('latitude') && $request->has('longitude')) {
+                $user->latitude = $request->latitude;
+                $user->longitude = $request->longitude;
+            }
+
+            // حفظ FCM token
             $fcm_token = $request->input('fcm_token');
             if ($fcm_token) {
                 $user->fcm_token = $fcm_token;
-                $user->save();
             }
+
+            $user->save();
 
             $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -149,6 +157,7 @@ class AuthController extends BaseApiController
             return $this->handleException($e, 'Login Error');
         }
     }
+
 
     /**
      * تسجيل دخول المشرف

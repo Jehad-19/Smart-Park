@@ -17,6 +17,8 @@ class LoginRequest extends FormRequest
             'email' => 'required|string|email|exists:users,email',
             'password' => 'required|string',
             'fcm_token' => 'nullable|string',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
         ];
     }
 

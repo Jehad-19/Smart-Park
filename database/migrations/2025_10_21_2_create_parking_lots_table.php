@@ -16,10 +16,10 @@ return new class extends Migration
             $table->decimal('latitude', 10, 7);
             $table->decimal('longitude', 10, 7);
             $table->decimal('price_per_minute', 8, 2);
-            $table->boolean('is_active')->default(true);
+            $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
 
-            $table->index('is_active');
+            $table->index('status');
             $table->index(['latitude', 'longitude']);
         });
     }

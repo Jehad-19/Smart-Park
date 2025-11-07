@@ -17,7 +17,7 @@ class ParkingLot extends Model
         'latitude',
         'longitude',
         'price_per_minute',
-        'is_active',
+        'status',
     ];
 
     protected function casts(): array
@@ -26,7 +26,7 @@ class ParkingLot extends Model
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
             'price_per_minute' => 'decimal:2',
-            'is_active' => 'boolean',
+            'status' => 'enum',
         ];
     }
 

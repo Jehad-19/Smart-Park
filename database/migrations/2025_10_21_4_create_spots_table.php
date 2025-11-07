@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('parking_lot_id')->constrained('parking_lots')->cascadeOnDelete();
             $table->string('spot_number');
             $table->enum('type', ['regular', 'disabled'])->default('regular');
-            $table->boolean('is_available')->default(true);
+            $table->enum('status', ['available', 'occupied', 'reserved'])->default('available');
             $table->timestamps();
 
             $table->unique(['parking_lot_id', 'spot_number']);
