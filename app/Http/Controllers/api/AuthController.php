@@ -7,6 +7,7 @@ use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Resources\UserResource;
 use App\Mail\OtpMail;
+use App\Models\Admin;
 use App\Models\User;
 use App\Models\Wallet;
 use Illuminate\Http\Request;
@@ -63,12 +64,22 @@ class AuthController extends BaseApiController
     /**
      * الخطوة 2 للتسجيل: التحقق من OTP وإنشاء الحساب
      */
+
+
     public function verifyAccountOtp(Request $request)
     {
         try {
             $request->validate([
                 'email' => 'required|email',
                 'otp' => 'required|string|min:6|max:6',
+                'latitude' => 'nullable|numeric|between:-90,90',
+                'longitude' => 'nullable|numeric|between:-180,180',
+                'fcm_token' => 'nullable|string',
+            ], [
+                'email.required' => 'البريد الإلكتروني مطلوب.',
+                'otp.required' => 'رمز التحقق مطلوب.',
+                'latitude.numeric' => 'خط العرض يجب أن يكون رقماً.',
+                'longitude.numeric' => 'خط الطول يجب أن يكون رقماً.',
             ]);
 
             $cacheKey = 'register:' . $request->email;
@@ -83,14 +94,16 @@ class AuthController extends BaseApiController
             }
 
             $user = null;
-            DB::transaction(function () use ($cached, &$user) {
+            DB::transaction(function () use ($cached, $request, &$user) {
                 $data = $cached['data'];
                 $user = User::create([
                     'name' => $data['name'],
                     'email' => $data['email'],
                     'phone' => $data['phone'],
-                    'password' => bcrypt($data['password']),
-                    'fcm_token' => $data['fcm_token'] ?? null,
+                    'password' => Hash::make($data['password']),
+                    'fcm_token' => $request->fcm_token ?? null,
+                    'latitude' => $request->latitude ?? null,
+                    'longitude' => $request->longitude ?? null,
                     'status' => 'active',
                 ]);
                 Wallet::create(['user_id' => $user->id]);
@@ -113,6 +126,7 @@ class AuthController extends BaseApiController
             return $this->handleException($e, 'Verify Account OTP Error');
         }
     }
+
 
     /**
      * تسجيل دخول المستخدم
@@ -170,7 +184,7 @@ class AuthController extends BaseApiController
                 'password' => 'required|string',
             ]);
 
-            $admin = User::where('employee_number', $request->employee_number)->first();
+            $admin = Admin::where('employee_number', $request->employee_number)->first();
 
             if (!$admin || !Hash::check($request->password, $admin->password)) {
                 return $this->sendError('رقم الموظف أو كلمة المرور غير صحيحة.', [], 401);

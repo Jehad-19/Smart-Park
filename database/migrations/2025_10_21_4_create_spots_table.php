@@ -17,7 +17,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['parking_lot_id', 'spot_number']);
-            $table->index('is_available');
+            $table->index('status');
             $table->index('type');
         });
     }

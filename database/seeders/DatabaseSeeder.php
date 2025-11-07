@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Admin;
 use App\Models\User;
 use App\Models\Wallet;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -28,6 +29,15 @@ class DatabaseSeeder extends Seeder
         Wallet::factory()->create([
             'user_id' => 1,
             'balance' => 1000,
+        ]);
+
+        Admin::factory()->create([
+            'name' => 'admin',
+            'email' => 'jeha710@gmial.com',
+            'phone' => '0910406699',
+            'password' => bcrypt('jehad123'),
+            'employee_number' => '1',
+            'status' => 'active',
         ]);
     }
 }

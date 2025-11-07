@@ -6,6 +6,7 @@ use App\Http\Controllers\api\AuthController;
 use App\Http\Controllers\api\UserController;
 use App\Http\Controllers\api\WalletController;
 use App\Http\Controllers\Api\VehicleController;
+use App\Http\Controllers\Api\ParkingLotController;
 
 
 // --- Auth Routes ---
@@ -52,10 +53,33 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{id}', [VehicleController::class, 'update']);
         Route::delete('/{id}', [VehicleController::class, 'destroy']);
     });
+
+    // مسارات مواقف السيارات
+    Route::prefix('parking-lots')->group(function () {
+        Route::get('/nearby', [ParkingLotController::class, 'getNearbyParkingLots']);
+        Route::get('/{id}', [ParkingLotController::class, 'show']);
+        Route::get('/', [ParkingLotController::class, 'index']);
+    });
 });
+
 
 
 // Admin Authentication (يمكن فصلها في ملف admin.php)
 Route::prefix('admin/auth')->group(function () {
     Route::post('/login', [AuthController::class, 'adminLogin']);
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::prefix('admin')->group(function () {
+        Route::post('/logout', [AuthController::class, 'logout']);
+
+        // مسارات إدارة مواقف السيارات
+        Route::prefix('parking-lots')->group(function () {
+            Route::get('/', [ParkingLotController::class, 'index']);
+            Route::post('/', [ParkingLotController::class, 'store']);
+            Route::put('/{id}', [ParkingLotController::class, 'update']);
+            Route::delete('/{id}', [ParkingLotController::class, 'destroy']);
+            Route::patch('/{id}/toggle-status', [ParkingLotController::class, 'toggleStatus']);
+        });
+    });
 });

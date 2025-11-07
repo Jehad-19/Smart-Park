@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ParkingLot extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
 
     protected $fillable = [
         'name',
@@ -26,7 +26,7 @@ class ParkingLot extends Model
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
             'price_per_minute' => 'decimal:2',
-            'status' => 'enum',
+
         ];
     }
 
@@ -39,5 +39,18 @@ class ParkingLot extends Model
     public function availableSpots()
     {
         return $this->hasMany(Spot::class)->where('is_available', true);
+    }
+
+    public function availableSpotsCount()
+    {
+        return $this->spots()->where('status', 'available')->count();
+    }
+
+    /**
+     * إجمالي المواقف
+     */
+    public function totalSpotsCount()
+    {
+        return $this->spots()->count();
     }
 }
