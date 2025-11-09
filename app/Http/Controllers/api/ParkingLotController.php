@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\BaseApiController;
 use App\Http\Requests\StoreParkingLotRequest;
 use App\Http\Requests\UpdateParkingLotRequest;
 use App\Http\Resources\ParkingLotResource;
+use App\Http\Resources\SpotResource;
 use App\Helpers\LocationHelper;
 use App\Models\ParkingLot;
 use Illuminate\Http\Request;
@@ -223,6 +224,40 @@ class ParkingLotController extends BaseApiController
             );
         } catch (\Exception $e) {
             return $this->handleException($e, 'Toggle Status Error');
+        }
+    }
+
+
+
+
+    /**
+     * عرض المواقف الفرعية المتاحة لموقف معين (للمستخدم)
+     */
+    public function getSpots($parkingLotId)
+    {
+        try {
+            $parkingLot = ParkingLot::where('status', 'active')->find($parkingLotId);
+
+            if (!$parkingLot) {
+                return $this->sendError('الموقف غير موجود أو غير نشط.', [], 404);
+            }
+
+            // جلب المواقف الفرعية المتاحة فقط
+            $availableSpots = $parkingLot->spots()
+                ->orderBy('spot_number')
+                ->get();
+
+            return $this->sendSuccess([
+                'parking_lot' => [
+                    'id' => $parkingLot->id,
+                    'name' => $parkingLot->name,
+                    'price_per_minute' => (float) $parkingLot->price_per_minute,
+                ],
+                'available_spots' => SpotResource::collection($availableSpots),
+                'total_available' => $availableSpots->count(),
+            ], 'تم جلب المواقف المتاحة بنجاح.');
+        } catch (\Exception $e) {
+            return $this->handleException($e, 'Get Available Spots Error');
         }
     }
 }

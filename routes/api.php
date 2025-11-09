@@ -7,6 +7,7 @@ use App\Http\Controllers\api\UserController;
 use App\Http\Controllers\api\WalletController;
 use App\Http\Controllers\Api\VehicleController;
 use App\Http\Controllers\Api\ParkingLotController;
+use App\Http\Controllers\Api\SpotController;
 
 
 // --- Auth Routes ---
@@ -59,6 +60,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/nearby', [ParkingLotController::class, 'getNearbyParkingLots']);
         Route::get('/{id}', [ParkingLotController::class, 'show']);
         Route::get('/', [ParkingLotController::class, 'index']);
+        Route::get('/{id}/spots', [ParkingLotController::class, 'getSpots']); 
+
     });
 });
 
@@ -81,5 +84,15 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/{id}', [ParkingLotController::class, 'destroy']);
             Route::patch('/{id}/toggle-status', [ParkingLotController::class, 'toggleStatus']);
         });
+    });
+
+    Route::middleware('auth:sanctum')->prefix('admin/parking-lots/{parkingLotId}/spots')->group(function () {
+        Route::get('/', [SpotController::class, 'index']);
+        Route::post('/', [SpotController::class, 'store']);
+        Route::post('/bulk', [SpotController::class, 'bulkStore']);
+        Route::get('/{spotId}', [SpotController::class, 'show']);
+        Route::put('/{spotId}', [SpotController::class, 'update']);
+        Route::delete('/{spotId}', [SpotController::class, 'destroy']);
+        Route::patch('/{spotId}/status', [SpotController::class, 'updateStatus']);
     });
 });
