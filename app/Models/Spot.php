@@ -16,12 +16,7 @@ class Spot extends Model
         'status',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'status' => 'enum',
-        ];
-    }
+   
 
     // Relationships
     public function parkingLot()

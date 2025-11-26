@@ -8,6 +8,7 @@ use App\Http\Controllers\api\WalletController;
 use App\Http\Controllers\Api\VehicleController;
 use App\Http\Controllers\Api\ParkingLotController;
 use App\Http\Controllers\Api\SpotController;
+use App\Http\Controllers\Api\BookingController;
 
 
 // --- Auth Routes ---
@@ -61,8 +62,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', [ParkingLotController::class, 'show']);
         Route::get('/', [ParkingLotController::class, 'index']);
         Route::get('/{id}/spots', [ParkingLotController::class, 'getSpots']); 
-
     });
+
+    // مسارات الحجوزات
+    Route::prefix('bookings')->group(function () {
+        Route::post('/', [BookingController::class, 'store']);
+        Route::post('/{id}/cancel', [BookingController::class, 'cancel']);
+    });
+
+    // مسارات QR (يمكن أن تكون عامة أو محمية، حسب الحاجة. هنا محمية للمستخدم أو جهاز المسح)
+    Route::post('/scan/entrance', [BookingController::class, 'scanEntrance']);
+    Route::post('/scan/exit', [BookingController::class, 'scanExit']);
 });
 
 

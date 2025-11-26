@@ -11,7 +11,7 @@ class BaseApiController
     /**
      * إرسال استجابة نجاح
      */
-    protected function sendSuccess(array $data, string $message, int $statusCode = 200)
+    protected function successResponse(array $data, string $message, int $statusCode = 200)
     {
         return response()->json([
             'status code' => $statusCode,
@@ -24,7 +24,7 @@ class BaseApiController
     /**
      * إرسال استجابة خطأ
      */
-    protected function sendError(string $message, array $errors = [], int $statusCode = 400)
+    protected function errorResponse(string $message, array $errors = [], int $statusCode = 400)
     {
         return response()->json([
             'status code' => $statusCode,

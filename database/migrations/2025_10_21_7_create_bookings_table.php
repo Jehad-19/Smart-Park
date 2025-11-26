@@ -15,9 +15,12 @@ return new class extends Migration
             $table->foreignId('vehicle_id')->constrained('vehicles')->cascadeOnDelete();
             $table->dateTime('start_time');
             $table->dateTime('end_time');
+            $table->dateTime('actual_start_time')->nullable();
+            $table->dateTime('actual_end_time')->nullable();
             $table->integer('duration_minutes')->nullable();
+            $table->string('qr_code_token')->unique();
             $table->decimal('total_price', 8, 2)->nullable();
-            $table->enum('status', ['pending', 'active', 'completed', 'expired'])->default('pending');
+            $table->enum('status', ['pending', 'active', 'completed', 'expired', 'canceled'])->default('pending');
             $table->timestamps();
 
             $table->index('user_id');

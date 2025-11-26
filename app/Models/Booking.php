@@ -15,9 +15,12 @@ class Booking extends Model
         'vehicle_id',
         'start_time',
         'end_time',
+        'actual_start_time',
+        'actual_end_time',
         'duration_minutes',
         'total_price',
         'status',
+        'qr_code_token',
     ];
 
     protected function casts(): array
@@ -25,6 +28,8 @@ class Booking extends Model
         return [
             'start_time' => 'datetime',
             'end_time' => 'datetime',
+            'actual_start_time' => 'datetime',
+            'actual_end_time' => 'datetime',
             'duration_minutes' => 'integer',
             'total_price' => 'decimal:2',
         ];
