@@ -24,7 +24,7 @@ class BaseApiController
     /**
      * إرسال استجابة خطأ
      */
-    protected function errorResponse(string $message, array $errors = [], int $statusCode = 400)
+    protected function sendError(string $message, array $errors = [], int $statusCode = 400)
     {
         return response()->json([
             'status code' => $statusCode,

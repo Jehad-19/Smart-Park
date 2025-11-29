@@ -159,6 +159,9 @@ class AuthController extends BaseApiController
 
             $user->save();
 
+            // ✅ Revoke all previous tokens (one device login)
+            $user->tokens()->delete();
+            
             $token = $user->createToken('auth_token')->plainTextToken;
 
             $data = [
