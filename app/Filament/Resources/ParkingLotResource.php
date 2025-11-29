@@ -24,23 +24,28 @@ class ParkingLotResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('name')
+                    ->label('الاسم')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\Textarea::make('description')
+                    ->label('الوصف')
                     ->columnSpanFull(),
                 Forms\Components\Textarea::make('address')
+                    ->label('العنوان')
                     ->required()
                     ->columnSpanFull(),
-                Forms\Components\TextInput::make('latitude')
-                    ->required()
-                    ->numeric(),
-                Forms\Components\TextInput::make('longitude')
-                    ->required()
-                    ->numeric(),
+                // Forms\Components\TextInput::make('latitude')
+                //     ->required()
+                //     ->numeric(),
+                // Forms\Components\TextInput::make('longitude')
+                //     ->required()
+                //     ->numeric(),
                 Forms\Components\TextInput::make('price_per_minute')
+                    ->label('السعر للدقيقة')
                     ->required()
                     ->numeric(),
                 Forms\Components\TextInput::make('status')
+                    ->label('الحالة')
                     ->required(),
             ]);
     }
@@ -50,18 +55,24 @@ class ParkingLotResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
+                    ->label('الاسم')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('latitude')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('longitude')
-                    ->numeric()
-                    ->sortable(),
+                Tables\Columns\TextColumn::make('address')
+                    ->label('العنوان')
+                    ->searchable(),
+                // Tables\Columns\TextColumn::make('latitude')
+                //     ->numeric()
+                //     ->sortable(),
+                // Tables\Columns\TextColumn::make('longitude')
+                //     ->numeric()
+                //     ->sortable(),
                 Tables\Columns\TextColumn::make('price_per_minute')
+                    ->label('السعر للدقيقة')
                     ->numeric()
                     ->money()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
+                    ->label('الحالة')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'active' => 'success',
@@ -70,6 +81,7 @@ class ParkingLotResource extends Resource
                         default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('تاريخ الإنشاء')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

@@ -49,4 +49,15 @@ class User extends Authenticatable
     {
         return $this->hasMany(Booking::class);
     }
+
+    // Accessors & Mutators
+    public function getIsActiveAttribute(): bool
+    {
+        return $this->status === 'active';
+    }
+
+    public function setIsActiveAttribute($value)
+    {
+        $this->status = $value ? 'active' : 'inactive';
+    }
 }

@@ -24,23 +24,31 @@ class BookingResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('user_id')
+                    ->label('المستخدم')
                     ->required()
                     ->numeric(),
                 Forms\Components\TextInput::make('spot_id')
+                    ->label('الموقف')
                     ->required()
                     ->numeric(),
                 Forms\Components\TextInput::make('vehicle_id')
+                    ->label('المركبة')
                     ->required()
                     ->numeric(),
                 Forms\Components\DateTimePicker::make('start_time')
+                    ->label('وقت البدء')
                     ->required(),
                 Forms\Components\DateTimePicker::make('end_time')
+                    ->label('وقت الانتهاء')
                     ->required(),
                 Forms\Components\TextInput::make('duration_minutes')
+                    ->label('المدة (دقيقة)')
                     ->numeric(),
                 Forms\Components\TextInput::make('total_price')
+                    ->label('السعر الإجمالي')
                     ->numeric(),
                 Forms\Components\TextInput::make('status')
+                    ->label('الحالة')
                     ->required(),
             ]);
     }
@@ -49,29 +57,34 @@ class BookingResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('user_id')
-                    ->numeric()
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('اسم المستخدم')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('spot_id')
-                    ->numeric()
+                Tables\Columns\TextColumn::make('spot.spot_number')
+                    ->label('رقم الموقف')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('vehicle_id')
-                    ->numeric()
+                Tables\Columns\TextColumn::make('vehicle.brand')
+                    ->label('نوع السيارة')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('start_time')
+                    ->label('وقت البدء')
                     ->dateTime()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('end_time')
+                    ->label('وقت الانتهاء')
                     ->dateTime()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('duration_minutes')
+                    ->label('المدة (دقيقة)')
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('total_price')
+                    ->label('السعر الإجمالي')
                     ->numeric()
                     ->money()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
+                    ->label('الحالة')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'completed' => 'success',
@@ -80,6 +93,7 @@ class BookingResource extends Resource
                         default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('تاريخ الإنشاء')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -108,8 +122,13 @@ class BookingResource extends Resource
     {
         return [
             'index' => Pages\ListBookings::route('/'),
-            'create' => Pages\CreateBooking::route('/create'),
+            // 'create' => Pages\CreateBooking::route('/create'),
             'edit' => Pages\EditBooking::route('/{record}/edit'),
         ];
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
     }
 }

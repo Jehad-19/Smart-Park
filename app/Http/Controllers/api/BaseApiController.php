@@ -11,7 +11,7 @@ class BaseApiController
     /**
      * إرسال استجابة نجاح
      */
-    protected function successResponse(array $data, string $message, int $statusCode = 200)
+    protected function sendSuccess(array $data, string $message, int $statusCode = 200)
     {
         return response()->json([
             'status code' => $statusCode,
