@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\api\AuthController;
+use App\Http\Controllers\api\DashboardController;
 use App\Http\Controllers\api\UserController;
 use App\Http\Controllers\api\WalletController;
 use App\Http\Controllers\Api\VehicleController;
@@ -28,6 +29,7 @@ Route::prefix('auth')->group(function () {
 // Authenticated Routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
 
     // مسارات المستخدم المحمية
     Route::prefix('user')->group(function () {
@@ -61,7 +63,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/nearby', [ParkingLotController::class, 'getNearbyParkingLots']);
         Route::get('/{id}', [ParkingLotController::class, 'show']);
         Route::get('/', [ParkingLotController::class, 'index']);
-        Route::get('/{id}/spots', [ParkingLotController::class, 'getSpots']); 
+        Route::get('/{id}/spots', [ParkingLotController::class, 'getSpots']);
     });
 
     // مسارات الحجوزات
