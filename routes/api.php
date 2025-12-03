@@ -2,10 +2,10 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\api\AuthController;
-use App\Http\Controllers\api\DashboardController;
-use App\Http\Controllers\api\UserController;
-use App\Http\Controllers\api\WalletController;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\WalletController;
 use App\Http\Controllers\Api\VehicleController;
 use App\Http\Controllers\Api\ParkingLotController;
 use App\Http\Controllers\Api\SpotController;
