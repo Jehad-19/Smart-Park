@@ -41,6 +41,11 @@ class ParkingLot extends Model
         return $this->hasMany(Spot::class)->where('is_available', true);
     }
 
+    public function savedByUsers()
+    {
+        return $this->belongsToMany(User::class, 'saved_parking_lots')->withTimestamps();
+    }
+
     public function availableSpotsCount()
     {
         return $this->spots()->where('status', 'available')->count();

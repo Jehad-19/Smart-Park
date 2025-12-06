@@ -21,6 +21,7 @@ class ParkingLotResource extends JsonResource
             'distance' => isset($this->distance) ? (float) $this->distance : null,
             'available_spots' => $this->available_spots ?? 0,
             'total_spots' => $this->total_spots ?? 0,
+            'is_saved' => (bool) ($this->is_saved ?? false),
             'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
         ];

@@ -50,6 +50,27 @@ class User extends Authenticatable
         return $this->hasMany(Booking::class);
     }
 
+    public function savedParkingLots()
+    {
+        return $this->belongsToMany(ParkingLot::class, 'saved_parking_lots')->withTimestamps();
+    }
+
+    public function savedParkingLotRecords()
+    {
+        return $this->hasMany(SavedParkingLot::class);
+    }
+
+    public function hasSavedParkingLot(int $parkingLotId): bool
+    {
+        if ($this->relationLoaded('savedParkingLots')) {
+            return $this->savedParkingLots->contains('id', $parkingLotId);
+        }
+
+        return $this->savedParkingLots()
+            ->where('parking_lot_id', $parkingLotId)
+            ->exists();
+    }
+
     // Accessors & Mutators
     public function getIsActiveAttribute(): bool
     {

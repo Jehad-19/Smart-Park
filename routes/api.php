@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\WalletController;
 use App\Http\Controllers\Api\VehicleController;
 use App\Http\Controllers\Api\ParkingLotController;
+use App\Http\Controllers\Api\SavedParkingLotController;
 use App\Http\Controllers\Api\SpotController;
 use App\Http\Controllers\Api\BookingController;
 
@@ -61,6 +62,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // مسارات مواقف السيارات
     Route::prefix('parking-lots')->group(function () {
         Route::get('/nearby', [ParkingLotController::class, 'getNearbyParkingLots']);
+        Route::get('/saved', [SavedParkingLotController::class, 'index']);
+        Route::post('/{id}/save', [SavedParkingLotController::class, 'store']);
+        Route::delete('/{id}/save', [SavedParkingLotController::class, 'destroy']);
         Route::get('/{id}', [ParkingLotController::class, 'show']);
         Route::get('/', [ParkingLotController::class, 'index']);
         Route::get('/{id}/spots', [ParkingLotController::class, 'getSpots']);

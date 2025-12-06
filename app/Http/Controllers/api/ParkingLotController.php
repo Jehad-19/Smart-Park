@@ -31,6 +31,7 @@ class ParkingLotController extends BaseApiController
             $userLat = $request->latitude;
             $userLon = $request->longitude;
             $radius = $request->radius ?? 10; // افتراضياً 10 كم
+            $savedLotIds = $this->getSavedLotIds($request);
 
             $parkingLots = ParkingLot::where('status', 'active')->get();
 
@@ -54,6 +55,12 @@ class ParkingLotController extends BaseApiController
                 ->sortBy('distance')
                 ->values();
 
+            if (!empty($savedLotIds)) {
+                $nearbyLots->each(function ($lot) use ($savedLotIds) {
+                    $lot->is_saved = in_array((int) $lot->id, $savedLotIds, true);
+                });
+            }
+
             return $this->sendSuccess([
                 'parking_lots' => ParkingLotResource::collection($nearbyLots),
                 'total' => $nearbyLots->count(),
@@ -66,7 +73,7 @@ class ParkingLotController extends BaseApiController
     /**
      * عرض تفاصيل موقف محدد (للمستخدم)
      */
-    public function show($id)
+    public function show(Request $request, $id)
     {
         try {
             $parkingLot = ParkingLot::where('status', 'active')->find($id);
@@ -77,6 +84,7 @@ class ParkingLotController extends BaseApiController
 
             $parkingLot->available_spots = $parkingLot->availableSpotsCount();
             $parkingLot->total_spots = $parkingLot->totalSpotsCount();
+            $parkingLot->is_saved = in_array((int) $parkingLot->id, $this->getSavedLotIds($request), true);
 
             return $this->sendSuccess(
                 ['parking_lot' => new ParkingLotResource($parkingLot)],
@@ -97,6 +105,7 @@ class ParkingLotController extends BaseApiController
         try {
             $perPage = $request->input('per_page', 15);
             $status = $request->input('status'); // active or inactive
+            $savedLotIds = $this->getSavedLotIds($request);
 
             $query = ParkingLot::query()->latest();
 
@@ -107,9 +116,10 @@ class ParkingLotController extends BaseApiController
             $parkingLots = $query->paginate($perPage);
 
             // إضافة معلومات المواقف المتاحة لكل موقف
-            $parkingLots->getCollection()->transform(function ($lot) {
+            $parkingLots->getCollection()->transform(function ($lot) use ($savedLotIds) {
                 $lot->available_spots = $lot->availableSpotsCount();
                 $lot->total_spots = $lot->totalSpotsCount();
+                $lot->is_saved = in_array((int) $lot->id, $savedLotIds, true);
                 return $lot;
             });
 
@@ -259,5 +269,19 @@ class ParkingLotController extends BaseApiController
         } catch (\Exception $e) {
             return $this->handleException($e, 'Get Available Spots Error');
         }
+    }
+
+    protected function getSavedLotIds(Request $request): array
+    {
+        $user = $request->user();
+
+        if (!$user || !method_exists($user, 'savedParkingLots')) {
+            return [];
+        }
+
+        return $user->savedParkingLots()
+            ->pluck('parking_lots.id')
+            ->map(fn($id) => (int) $id)
+            ->all();
     }
 }
