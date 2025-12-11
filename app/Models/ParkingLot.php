@@ -16,7 +16,7 @@ class ParkingLot extends Model
         'address',
         'latitude',
         'longitude',
-        'price_per_minute',
+        'price_per_hour',
         'status',
     ];
 
@@ -25,9 +25,27 @@ class ParkingLot extends Model
         return [
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
-            'price_per_minute' => 'decimal:2',
+            'price_per_hour' => 'decimal:2',
 
         ];
+    }
+
+    /**
+     * Backward compatibility: if price_per_hour is null but legacy price_per_minute exists, derive it.
+     */
+    public function getPricePerHourAttribute($value): ?float
+    {
+        if ($value !== null) {
+            return (float) $value;
+        }
+
+        $legacyPerMinute = $this->attributes['price_per_minute'] ?? null;
+
+        if ($legacyPerMinute !== null) {
+            return (float) $legacyPerMinute * 60;
+        }
+
+        return null;
     }
 
     // Relationships

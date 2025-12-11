@@ -257,11 +257,16 @@ class ParkingLotController extends BaseApiController
                 ->orderBy('spot_number')
                 ->get();
 
+            $pricePerHour = $parkingLot->price_per_hour;
+            if ($pricePerHour === null && isset($parkingLot->price_per_minute)) {
+                $pricePerHour = (float) $parkingLot->price_per_minute * 60;
+            }
+
             return $this->sendSuccess([
                 'parking_lot' => [
                     'id' => $parkingLot->id,
                     'name' => $parkingLot->name,
-                    'price_per_minute' => (float) $parkingLot->price_per_minute,
+                    'price_per_hour' => $pricePerHour !== null ? (float) $pricePerHour : 0.0,
                 ],
                 'available_spots' => SpotResource::collection($availableSpots),
                 'total_available' => $availableSpots->count(),

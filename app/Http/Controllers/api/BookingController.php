@@ -79,7 +79,7 @@ class BookingController extends BaseApiController
         }
 
         // Optional: Check minimum balance (e.g., cost of 30 mins)
-        // $minCost = $spot->parkingLot->price_per_minute * 30;
+        // $minCost = ($spot->parkingLot->price_per_hour / 60) * 30;
         // if ($user->wallet->balance < $minCost) { ... }
 
         DB::beginTransaction();
@@ -190,7 +190,12 @@ class BookingController extends BaseApiController
             // Charge for the greater of the two (Booked vs Actual)
             $durationMinutes = max($actualDuration, $bookedDuration);
 
-            $pricePerMinute = $booking->spot->parkingLot->price_per_minute;
+            $pricePerHour = $booking->spot->parkingLot->price_per_hour;
+            if ($pricePerHour === null && isset($booking->spot->parkingLot->price_per_minute)) {
+                $pricePerHour = (float) $booking->spot->parkingLot->price_per_minute * 60;
+            }
+
+            $pricePerMinute = $pricePerHour / 60;
             $totalPrice = $durationMinutes * $pricePerMinute;
 
             $user = $booking->user;

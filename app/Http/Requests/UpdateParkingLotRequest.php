@@ -19,7 +19,7 @@ class UpdateParkingLotRequest extends FormRequest
             'address' => 'required|string',
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
-            'price_per_minute' => 'required|numeric|min:0|max:999999.99',
+            'price_per_hour' => 'required|numeric|min:0|max:999999.99',
             'status' => 'nullable|in:active,inactive',
         ];
     }
@@ -33,8 +33,8 @@ class UpdateParkingLotRequest extends FormRequest
             'latitude.between' => 'خط العرض يجب أن يكون بين -90 و 90.',
             'longitude.required' => 'خط الطول مطلوب.',
             'longitude.between' => 'خط الطول يجب أن يكون بين -180 و 180.',
-            'price_per_minute.required' => 'السعر بالدقيقة مطلوب.',
-            'price_per_minute.min' => 'السعر يجب أن يكون أكبر من أو يساوي 0.',
+            'price_per_hour.required' => 'السعر بالساعة مطلوب.',
+            'price_per_hour.min' => 'السعر يجب أن يكون أكبر من أو يساوي 0.',
         ];
     }
 }

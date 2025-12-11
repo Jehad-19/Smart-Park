@@ -40,8 +40,8 @@ class ParkingLotResource extends Resource
                 // Forms\Components\TextInput::make('longitude')
                 //     ->required()
                 //     ->numeric(),
-                Forms\Components\TextInput::make('price_per_minute')
-                    ->label('السعر للدقيقة')
+                Forms\Components\TextInput::make('price_per_hour')
+                    ->label('السعر للساعة')
                     ->required()
                     ->numeric(),
                 Forms\Components\TextInput::make('status')
@@ -66,15 +66,15 @@ class ParkingLotResource extends Resource
                 // Tables\Columns\TextColumn::make('longitude')
                 //     ->numeric()
                 //     ->sortable(),
-                Tables\Columns\TextColumn::make('price_per_minute')
-                    ->label('السعر للدقيقة')
+                Tables\Columns\TextColumn::make('price_per_hour')
+                    ->label('السعر للساعة')
                     ->numeric()
                     ->money()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
                     ->label('الحالة')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'active' => 'success',
                         'inactive' => 'gray',
                         'maintenance' => 'warning',
