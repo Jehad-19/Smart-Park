@@ -15,7 +15,7 @@ return new class extends Migration
             $table->text('address');
             $table->decimal('latitude', 10, 7);
             $table->decimal('longitude', 10, 7);
-            $table->decimal('price_per_minute', 8, 2);
+            $table->decimal('price_per_hour', 8, 2);
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
 
