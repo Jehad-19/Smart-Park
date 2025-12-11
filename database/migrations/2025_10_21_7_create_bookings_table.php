@@ -19,6 +19,7 @@ return new class extends Migration
             $table->dateTime('actual_end_time')->nullable();
             $table->integer('duration_minutes')->nullable();
             $table->string('qr_code_token')->unique();
+            $table->integer('state')->default(0);
             $table->decimal('total_price', 8, 2)->nullable();
             $table->enum('status', ['pending', 'active', 'completed', 'expired', 'canceled'])->default('pending');
             $table->timestamps();
@@ -26,6 +27,7 @@ return new class extends Migration
             $table->index('user_id');
             $table->index('spot_id');
             $table->index('vehicle_id');
+            $table->index('state');
             $table->index('status');
             $table->index(['spot_id', 'start_time', 'end_time']);
             $table->index(['start_time', 'end_time']);
