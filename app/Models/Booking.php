@@ -21,6 +21,7 @@ class Booking extends Model
         'total_price',
         'status',
         'qr_code_token',
+        'state',
     ];
 
     protected function casts(): array
