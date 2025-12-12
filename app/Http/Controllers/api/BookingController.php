@@ -9,6 +9,7 @@ use App\Models\Booking;
 use App\Models\Spot;
 use App\Models\Transaction;
 use App\Models\Vehicle;
+use App\Models\Wallet;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -55,6 +56,21 @@ class BookingController extends BaseApiController
 
         $user = $request->user();
 
+        // Allow booking only within the next 30 minutes (not later) and not in the past
+        $startTime = Carbon::parse($request->start_time);
+        $endTime = Carbon::parse($request->end_time);
+
+        $now = now();
+        $maxStart = $now->copy()->addMinutes(30);
+
+        if ($startTime->lt($now)) {
+            return $this->sendError('لا يمكن تحديد وقت بدء في الماضي', [], 422);
+        }
+
+        if ($startTime->gt($maxStart)) {
+            return $this->sendError('يجب أن يبدأ الحجز خلال 30 دقيقة من الآن كحد أقصى', [], 422);
+        }
+
         // Check if spot is available
         $spot = Spot::where('id', $request->spot_id)->where('status', 'available')->first();
         if (!$spot) {
@@ -82,21 +98,56 @@ class BookingController extends BaseApiController
         // $minCost = ($spot->parkingLot->price_per_hour / 60) * 30;
         // if ($user->wallet->balance < $minCost) { ... }
 
+        // Calculate total price based on duration
+        $spot->load('parkingLot');
+        $pricePerHour = $spot->parkingLot->price_per_hour ?? 0;
+        if ($pricePerHour === 0 && isset($spot->parkingLot->price_per_minute)) {
+            $pricePerHour = (float) $spot->parkingLot->price_per_minute * 60;
+        }
+
+        $durationMinutes = max(1, $startTime->diffInMinutes($endTime));
+        $totalPrice = ($pricePerHour / 60) * $durationMinutes;
+
+        $wallet = $user->wallet;
+        if (!$wallet) {
+            return $this->sendError('محفظة المستخدم غير متوفرة', [], 404);
+        }
+
+        if ($wallet->balance < $totalPrice) {
+            return $this->sendError('الرصيد غير كافٍ لإتمام الحجز', [], 400);
+        }
+
         DB::beginTransaction();
         try {
             $booking = new Booking([
                 'user_id' => $user->id,
                 'spot_id' => $request->spot_id,
                 'vehicle_id' => $request->vehicle_id,
-                'start_time' => $request->start_time,
-                'end_time' => $request->end_time,
+                'start_time' => $startTime,
+                'end_time' => $endTime,
                 'status' => 'pending',
                 'qr_code_token' => Str::uuid(),
+                'total_price' => $totalPrice,
             ]);
 
             // Ensure state is persisted even if DB default is missing
             $booking->state = 0;
             $booking->save();
+
+            // Deduct from wallet and record transaction
+            $balanceBefore = $wallet->balance;
+            $wallet->balance = $balanceBefore - $totalPrice;
+            $wallet->save();
+
+            Transaction::create([
+                'wallet_id' => $wallet->id,
+                'booking_id' => $booking->id,
+                'type' => 'payment',
+                'amount' => -$totalPrice,
+                'balance_before' => $balanceBefore,
+                'balance_after' => $wallet->balance,
+                'description' => "حجز موقف #{$booking->id}",
+            ]);
 
             $spot->update(['status' => 'reserved']);
 
