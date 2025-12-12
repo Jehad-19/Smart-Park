@@ -56,18 +56,18 @@ class BookingController extends BaseApiController
 
         $user = $request->user();
 
-        // Allow booking only within the next 30 minutes (not later) and not in the past
+        // Allow booking only within the next 30 minutes (inclusive) and not in the past
         $startTime = Carbon::parse($request->start_time);
         $endTime = Carbon::parse($request->end_time);
 
         $now = now();
-        $maxStart = $now->copy()->addMinutes(30);
+        $diffMinutes = $now->diffInMinutes($startTime, false); // negative if start is in the past
 
-        if ($startTime->lt($now)) {
+        if ($diffMinutes < 0) {
             return $this->sendError('لا يمكن تحديد وقت بدء في الماضي', [], 422);
         }
 
-        if ($startTime->gt($maxStart)) {
+        if ($diffMinutes > 30) {
             return $this->sendError('يجب أن يبدأ الحجز خلال 30 دقيقة من الآن كحد أقصى', [], 422);
         }
 
