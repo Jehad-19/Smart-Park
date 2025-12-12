@@ -84,7 +84,7 @@ class BookingController extends BaseApiController
 
         DB::beginTransaction();
         try {
-            $booking = Booking::create([
+            $booking = new Booking([
                 'user_id' => $user->id,
                 'spot_id' => $request->spot_id,
                 'vehicle_id' => $request->vehicle_id,
@@ -92,8 +92,11 @@ class BookingController extends BaseApiController
                 'end_time' => $request->end_time,
                 'status' => 'pending',
                 'qr_code_token' => Str::uuid(),
-                'state' => 0,
             ]);
+
+            // Ensure state is persisted even if DB default is missing
+            $booking->state = 0;
+            $booking->save();
 
             $spot->update(['status' => 'reserved']);
 
