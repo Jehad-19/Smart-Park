@@ -115,3 +115,4 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::get('/check-qr/{token}', [BookingController::class, 'checkQr']);
+Route::post('/update-state', [BookingController::class, 'updateState']);
