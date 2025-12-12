@@ -24,7 +24,8 @@ class StoreBookingRequest extends FormRequest
         return [
             'spot_id' => 'required|exists:spots,id',
             'vehicle_id' => 'required|exists:vehicles,id',
-            'start_time' => 'required|date|after:now',
+            // Allow immediate bookings without strict server-time skew issues
+            'start_time' => 'required|date',
             'end_time' => 'required|date|after:start_time',
         ];
     }
