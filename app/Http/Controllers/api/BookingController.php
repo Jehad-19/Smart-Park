@@ -92,6 +92,7 @@ class BookingController extends BaseApiController
                 'end_time' => $request->end_time,
                 'status' => 'pending',
                 'qr_code_token' => Str::uuid(),
+                'state' => 0,
             ]);
 
             $spot->update(['status' => 'reserved']);
