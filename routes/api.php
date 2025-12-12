@@ -112,4 +112,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{spotId}', [SpotController::class, 'destroy']);
         Route::patch('/{spotId}/status', [SpotController::class, 'updateStatus']);
     });
+
+    Route::get('/check-qr/{token}', [BookingController::class, 'checkQr']);
 });

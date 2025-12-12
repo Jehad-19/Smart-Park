@@ -12,6 +12,7 @@ use App\Models\Vehicle;
 use App\Models\Wallet;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 
@@ -62,6 +63,14 @@ class BookingController extends BaseApiController
 
         $now = now();
         $diffMinutes = $now->diffInMinutes($startTime, false); // negative if start is in the past
+
+        // Diagnostics to trace time-window enforcement; remove once verified
+        Log::info('booking_start_window', [
+            'now' => $now->toDateTimeString(),
+            'start_time' => $startTime->toDateTimeString(),
+            'diff_minutes' => $diffMinutes,
+            'user_id' => $user->id,
+        ]);
 
         if ($diffMinutes < 0) {
             return $this->sendError('لا يمكن تحديد وقت بدء في الماضي', [], 422);
@@ -301,5 +310,37 @@ class BookingController extends BaseApiController
             DB::rollBack();
             return response()->json(['message' => 'خطأ في معالجة الخروج', 'error' => $e->getMessage()], 500);
         }
+    }
+
+    public function checkQr($token)
+    {
+        $booking = Booking::where('qr_code_token', $token)->first();
+
+        if (! $booking) {
+            return response()->json([
+                'found' => false,
+            ]);
+        }
+
+        $state = (int) $booking->state;
+        $openGate = false;
+
+        if ($state === 0) {
+            $openGate = true;
+            $booking->state = 1;
+            $booking->save();
+        } elseif ($state === 1) {
+            $openGate = true;
+            $booking->state = 2;
+            $booking->save();
+        } else {
+            $openGate = false;
+        }
+
+        return response()->json([
+            'found'    => true,
+            'state'    => (int) $booking->state, // بعد التحديث
+            'openGate' => $openGate,
+        ]);
     }
 }
