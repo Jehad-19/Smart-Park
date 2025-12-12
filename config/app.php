@@ -100,11 +100,10 @@ return [
 
     'key' => env('APP_KEY'),
 
-    'previous_keys' => [
-        ...array_filter(
-            explode(',', (string) env('APP_PREVIOUS_KEYS', ''))
-        ),
-    ],
+    // Compatible with older PHP (no array spread)
+    'previous_keys' => array_filter(
+        explode(',', (string) env('APP_PREVIOUS_KEYS', ''))
+    ),
 
     /*
     |--------------------------------------------------------------------------
