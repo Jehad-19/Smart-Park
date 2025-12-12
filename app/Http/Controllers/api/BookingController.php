@@ -312,56 +312,32 @@ class BookingController extends BaseApiController
         }
     }
 
-    public function checkQr(string $token)
+    public function checkQr($token)
     {
         $booking = Booking::where('qr_code_token', $token)->first();
 
         if (! $booking) {
-            return response()->json([
-                'found' => false,
-            ], 200);
+            return response()->json(['found' => false]);
         }
 
         return response()->json([
             'found' => true,
             'state' => (int) $booking->state,
-        ], 200);
+        ]);
     }
 
     // POST /update-state  (UPDATES)
     public function updateState(Request $request)
     {
-        $data = $request->validate([
-            'token' => ['required', 'string'],
-            'state' => ['required', 'integer', 'in:0,1,2'],
-        ]);
-
-        $booking = Booking::where('qr_code_token', $data['token'])->first();
+        $booking = Booking::where('qr_code_token', $request->token)->first();
 
         if (! $booking) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Token not found',
-            ], 404);
+            return response()->json(['success' => false]);
         }
 
-        // Optional: enforce transitions only (recommended)
-        $current = (int) $booking->state;
-        $next    = (int) $data['state'];
-        if (!(($current === 0 && $next === 1) || ($current === 1 && $next === 2))) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid state transition',
-                'current' => $current,
-            ], 422);
-        }
-
-        $booking->state = $next;
+        $booking->state = $request->state;
         $booking->save();
 
-        return response()->json([
-            'success' => true,
-            'state'   => (int) $booking->state,
-        ], 200);
+        return response()->json(['success' => true]);
     }
 }
