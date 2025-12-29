@@ -71,6 +71,44 @@ class ParkingLotController extends BaseApiController
     }
 
     /**
+     * إرجاع كل المواقف أو البحث باسم/عنوان محدد
+     */
+    public function search(Request $request)
+    {
+        try {
+            $request->validate([
+                'q' => 'nullable|string|max:255',
+            ]);
+
+            $term = trim((string) $request->input('q', ''));
+            $query = ParkingLot::where('status', 'active');
+
+            if ($term !== '') {
+                $query->where(function ($sub) use ($term) {
+                    $sub->where('name', 'like', "%{$term}%")
+                        ->orWhere('address', 'like', "%{$term}%");
+                });
+            }
+
+            $parkingLots = $query->orderBy('name')->get();
+            $savedLotIds = $this->getSavedLotIds($request);
+
+            $parkingLots->each(function ($lot) use ($savedLotIds) {
+                $lot->available_spots = $lot->availableSpotsCount();
+                $lot->total_spots = $lot->totalSpotsCount();
+                $lot->is_saved = in_array((int) $lot->id, $savedLotIds, true);
+            });
+
+            return $this->sendSuccess([
+                'parking_lots' => ParkingLotResource::collection($parkingLots),
+                'total' => $parkingLots->count(),
+            ], 'تم البحث في المواقف بنجاح.');
+        } catch (\Exception $e) {
+            return $this->handleException($e, 'Search Parking Lots Error');
+        }
+    }
+
+    /**
      * عرض تفاصيل موقف محدد (للمستخدم)
      */
     public function show(Request $request, $id)

@@ -62,6 +62,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // مسارات مواقف السيارات
     Route::prefix('parking-lots')->group(function () {
         Route::get('/nearby', [ParkingLotController::class, 'getNearbyParkingLots']);
+        Route::get('/search', [ParkingLotController::class, 'search']);
         Route::get('/saved', [SavedParkingLotController::class, 'index']);
         Route::post('/{id}/save', [SavedParkingLotController::class, 'store']);
         Route::delete('/{id}/save', [SavedParkingLotController::class, 'destroy']);
@@ -75,6 +76,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [BookingController::class, 'index']);
         Route::post('/', [BookingController::class, 'store']);
         Route::post('/{id}/cancel', [BookingController::class, 'cancel']);
+        Route::post('/{id}/extend', [BookingController::class, 'extend']);
     });
 
     // مسارات QR (يمكن أن تكون عامة أو محمية، حسب الحاجة. هنا محمية للمستخدم أو جهاز المسح)

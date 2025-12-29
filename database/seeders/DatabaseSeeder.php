@@ -39,5 +39,8 @@ class DatabaseSeeder extends Seeder
             'employee_number' => '1',
             'status' => 'active',
         ]);
+
     }
+
+
 }

@@ -57,7 +57,7 @@ class BookingController extends BaseApiController
 
         $user = $request->user();
 
-        // Allow booking only within the next 30 minutes (inclusive) and not in the past
+        // Allow booking at any future time (still disallow past)
         $startTime = Carbon::parse($request->start_time);
         $endTime = Carbon::parse($request->end_time);
 
@@ -74,10 +74,6 @@ class BookingController extends BaseApiController
 
         if ($diffMinutes < 0) {
             return $this->sendError('لا يمكن تحديد وقت بدء في الماضي', [], 422);
-        }
-
-        if ($diffMinutes > 30) {
-            return $this->sendError('يجب أن يبدأ الحجز خلال 30 دقيقة من الآن كحد أقصى', [], 422);
         }
 
         // Check if spot is available
@@ -244,15 +240,19 @@ class BookingController extends BaseApiController
             $endTime = now();
             $startTime = $booking->actual_start_time;
 
-            // Calculate actual duration in minutes
-            $actualDuration = $startTime->diffInMinutes($endTime);
-            if ($actualDuration < 1) $actualDuration = 1;
+            // Ensure we have an actual start; fallback to scheduled start
+            if (!$startTime) {
+                $startTime = $booking->start_time;
+                $booking->actual_start_time = $startTime;
+            }
 
-            // Calculate booked duration in minutes
-            $bookedDuration = $booking->start_time->diffInMinutes($booking->end_time);
+            // Billing window: start from the earlier of (actual_start_time, scheduled start)
+            // and end at the later of (actual_end_time, scheduled end).
+            $billableStart = $startTime->copy()->min($booking->start_time);
+            $billableEnd = $endTime->copy()->max($booking->end_time);
 
-            // Charge for the greater of the two (Booked vs Actual)
-            $durationMinutes = max($actualDuration, $bookedDuration);
+            // Total billable duration in minutes (includes early entry and overtime)
+            $durationMinutes = max(1, $billableStart->diffInMinutes($billableEnd));
 
             $pricePerHour = $booking->spot->parkingLot->price_per_hour;
             if ($pricePerHour === null && isset($booking->spot->parkingLot->price_per_minute)) {
@@ -339,5 +339,116 @@ class BookingController extends BaseApiController
         $booking->save();
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Extend an active or pending booking by a given number of minutes.
+     */
+    public function extend(Request $request, $id)
+    {
+        $request->validate([
+            'minutes' => 'required|integer|min:1|max:1440',
+        ]);
+
+        $user = $request->user();
+
+        $booking = Booking::with(['spot.parkingLot'])
+            ->where('id', $id)
+            ->where('user_id', $user->id)
+            ->whereIn('status', ['pending', 'active'])
+            ->first();
+
+        if (!$booking) {
+            return $this->sendError('الحجز غير موجود أو غير قابل للتمديد', [], 404);
+        }
+
+        $extraMinutes = (int) $request->input('minutes');
+
+        $currentEnd = Carbon::parse($booking->end_time);
+        $newEnd = $currentEnd->copy()->addMinutes($extraMinutes);
+
+        // Prevent overlap with other bookings on same spot
+        $overlap = Booking::where('spot_id', $booking->spot_id)
+            ->whereIn('status', ['pending', 'active'])
+            ->where('id', '!=', $booking->id)
+            ->where(function ($q) use ($currentEnd, $newEnd) {
+                $q->whereBetween('start_time', [$currentEnd, $newEnd])
+                    ->orWhereBetween('end_time', [$currentEnd, $newEnd])
+                    ->orWhere(function ($qq) use ($currentEnd, $newEnd) {
+                        $qq->where('start_time', '<', $currentEnd)
+                            ->where('end_time', '>', $newEnd);
+                    });
+            })
+            ->exists();
+
+        if ($overlap) {
+            return $this->sendError('الوقت المطلوب يتداخل مع حجز آخر لهذا الموقف', [], 400);
+        }
+
+        $pricePerHour = $booking->spot->parkingLot->price_per_hour;
+        if ($pricePerHour === null && isset($booking->spot->parkingLot->price_per_minute)) {
+            $pricePerHour = (float) $booking->spot->parkingLot->price_per_minute * 60;
+        }
+
+        $pricePerMinute = $pricePerHour / 60;
+        $extraCost = $pricePerMinute * $extraMinutes;
+
+        $wallet = $user->wallet;
+        if (!$wallet) {
+            return $this->sendError('محفظة المستخدم غير موجودة', [], 404);
+        }
+
+        if ($wallet->balance < $extraCost) {
+            return $this->sendError('الرصيد غير كافٍ للتمديد', [], 400);
+        }
+
+        DB::beginTransaction();
+        try {
+            $balanceBefore = $wallet->balance;
+            $wallet->balance -= $extraCost;
+            $wallet->save();
+            $balanceAfter = $wallet->balance;
+
+            Transaction::create([
+                'wallet_id' => $wallet->id,
+                'booking_id' => $booking->id,
+                'type' => 'payment',
+                'amount' => -$extraCost,
+                'balance_before' => $balanceBefore,
+                'balance_after' => $balanceAfter,
+                'description' => "تمديد حجز #{$booking->id}",
+            ]);
+
+            // ✅ التحديث الصحيح
+            $booking->end_time = $newEnd;
+            $booking->total_price = ($booking->total_price ?? 0) + $extraCost;
+            $booking->save();
+
+            // ✅ إعادة تحميل البيانات من Database
+            $booking->refresh();
+
+            DB::commit();
+
+            // ✅ إرجاع البيانات بصيغة صحيحة
+            return response()->json([
+                'success' => true,
+                'message' => 'تم تمديد الحجز بنجاح',
+                'booking' => [
+                    'id' => $booking->id,
+                    'start_time' => $booking->start_time->toDateTimeString(),
+                    'end_time' => $booking->end_time->toDateTimeString(), // ← ISO 8601 format
+                    'total_price' => $booking->total_price,
+                    'status' => $booking->status,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Extend booking error', [
+                'booking_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return $this->sendError('فشل تمديد الحجز', ['error' => $e->getMessage()], 500);
+        }
     }
 }

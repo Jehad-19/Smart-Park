@@ -34,12 +34,18 @@ class ParkingLotResource extends Resource
                     ->label('العنوان')
                     ->required()
                     ->columnSpanFull(),
-                // Forms\Components\TextInput::make('latitude')
-                //     ->required()
-                //     ->numeric(),
-                // Forms\Components\TextInput::make('longitude')
-                //     ->required()
-                //     ->numeric(),
+                Forms\Components\TextInput::make('latitude')
+                    ->label('خط العرض')
+                    ->required()
+                    ->numeric()
+                    ->placeholder('24.7136')
+                    ->helperText('أدخل خط العرض (Latitude) بدقة.'),
+                Forms\Components\TextInput::make('longitude')
+                    ->label('خط الطول')
+                    ->required()
+                    ->numeric()
+                    ->placeholder('46.6753')
+                    ->helperText('أدخل خط الطول (Longitude) بدقة.'),
                 Forms\Components\TextInput::make('price_per_hour')
                     ->label('السعر للساعة')
                     ->required()
@@ -60,12 +66,14 @@ class ParkingLotResource extends Resource
                 Tables\Columns\TextColumn::make('address')
                     ->label('العنوان')
                     ->searchable(),
-                // Tables\Columns\TextColumn::make('latitude')
-                //     ->numeric()
-                //     ->sortable(),
-                // Tables\Columns\TextColumn::make('longitude')
-                //     ->numeric()
-                //     ->sortable(),
+                Tables\Columns\TextColumn::make('latitude')
+                    ->label('خط العرض')
+                    ->numeric()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('longitude')
+                    ->label('خط الطول')
+                    ->numeric()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('price_per_hour')
                     ->label('السعر للساعة')
                     ->numeric()
