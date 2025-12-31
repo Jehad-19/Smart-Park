@@ -76,6 +76,14 @@ class BookingController extends BaseApiController
             return $this->sendError('لا يمكن تحديد وقت بدء في الماضي', [], 422);
         }
 
+        $hasActiveBooking = Booking::where('user_id', $user->id)
+            ->whereIn('status', ['pending', 'active'])
+            ->exists();
+
+        if ($hasActiveBooking) {
+            return $this->sendError('لديك حجز نشط بالفعل. لا يمكنك إنشاء حجز جديد حتى اكتمال أو إلغاء الحجز الحالي.', [], 400);
+        }
+
         // Check if spot is available
         $spot = Spot::where('id', $request->spot_id)->where('status', 'available')->first();
         if (!$spot) {
