@@ -24,17 +24,14 @@ class Booking extends Model
         'state',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'start_time' => 'datetime',
-            'end_time' => 'datetime',
-            'actual_start_time' => 'datetime',
-            'actual_end_time' => 'datetime',
-            'duration_minutes' => 'integer',
-            'total_price' => 'decimal:2',
-        ];
-    }
+    protected $casts = [
+        'start_time' => 'datetime',
+        'end_time' => 'datetime',
+        'actual_start_time' => 'datetime',
+        'actual_end_time' => 'datetime',
+        'duration_minutes' => 'integer',
+        'total_price' => 'decimal:2',
+    ];
 
     // Relationships
     public function user()

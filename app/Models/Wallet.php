@@ -16,12 +16,9 @@ class Wallet extends Model
         'status',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'balance' => 'decimal:2',
-        ];
-    }
+    protected $casts = [
+        'balance' => 'decimal:2',
+    ];
 
     // Relationships
     public function user()
