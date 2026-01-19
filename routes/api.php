@@ -3,7 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\DashBoardController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\WalletController;
 use App\Http\Controllers\Api\VehicleController;
@@ -30,7 +30,7 @@ Route::prefix('auth')->group(function () {
 // Authenticated Routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
+    Route::get('/dashboard/summary', [DashBoardController::class, 'summary']);
 
     // مسارات المستخدم المحمية
     Route::prefix('user')->group(function () {
