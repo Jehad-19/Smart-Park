@@ -183,9 +183,11 @@ class ParkingLotController extends BaseApiController
         try {
             $validated = $request->validated();
 
+            $adminId = $request->user()->id ?? null;
+
             $parkingLot = null;
-            DB::transaction(function () use ($validated, &$parkingLot) {
-                $parkingLot = ParkingLot::create($validated);
+            DB::transaction(function () use ($validated, &$parkingLot, $adminId) {
+                $parkingLot = ParkingLot::create(array_merge($validated, ['admin_id' => $adminId]));
             });
 
             return $this->sendSuccess(
@@ -210,6 +212,7 @@ class ParkingLotController extends BaseApiController
             }
 
             $validated = $request->validated();
+            $validated['admin_id'] = $request->user()->id ?? null;
 
             DB::transaction(function () use ($parkingLot, $validated) {
                 $parkingLot->update($validated);
@@ -239,7 +242,11 @@ class ParkingLotController extends BaseApiController
             // TODO: التحقق من عدم وجود حجوزات نشطة
             // سنضيفها لاحقاً عند بناء Bookings
 
-            DB::transaction(function () use ($parkingLot) {
+            $adminId = request()->user()->id ?? null;
+
+            DB::transaction(function () use ($parkingLot, $adminId) {
+                $parkingLot->admin_id = $adminId;
+                $parkingLot->save();
                 $parkingLot->delete(); // سيحذف الـ Spots تلقائياً (cascade)
             });
 
@@ -261,8 +268,11 @@ class ParkingLotController extends BaseApiController
                 return $this->sendError('الموقف غير موجود.', [], 404);
             }
 
-            DB::transaction(function () use ($parkingLot) {
+            $adminId = request()->user()->id ?? null;
+
+            DB::transaction(function () use ($parkingLot, $adminId) {
                 $parkingLot->status = $parkingLot->status === 'active' ? 'inactive' : 'active';
+                $parkingLot->admin_id = $adminId;
                 $parkingLot->save();
             });
 

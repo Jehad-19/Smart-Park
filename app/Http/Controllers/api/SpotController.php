@@ -72,15 +72,18 @@ class SpotController extends BaseApiController
                 return $this->sendError('الموقف الرئيسي غير موجود.', [], 404);
             }
 
+
             $validated = $request->validated();
+            $adminId = $request->user()->id ?? null;
 
             $spot = null;
-            DB::transaction(function () use ($parkingLot, $validated, &$spot) {
+            DB::transaction(function () use ($parkingLot, $validated, &$spot, $adminId) {
                 $spot = Spot::create([
                     'parking_lot_id' => $parkingLot->id,
                     'spot_number' => $validated['spot_number'],
                     'type' => $validated['type'] ?? 'regular',
                     'status' => $validated['status'] ?? 'available',
+                    'admin_id' => $adminId,
                 ]);
             });
 
@@ -111,7 +114,9 @@ class SpotController extends BaseApiController
             $type = $validated['type'] ?? 'regular';
 
             $spots = [];
-            DB::transaction(function () use ($parkingLot, $prefix, $count, $type, &$spots) {
+            $adminId = $request->user()->id ?? null;
+
+            DB::transaction(function () use ($parkingLot, $prefix, $count, $type, &$spots, $adminId) {
                 for ($i = 1; $i <= $count; $i++) {
                     $spotNumber = $prefix . $i;
 
@@ -125,6 +130,7 @@ class SpotController extends BaseApiController
                             'spot_number' => $spotNumber,
                             'type' => $type,
                             'status' => 'available',
+                            'admin_id' => $adminId,
                         ]);
                     }
                 }
@@ -173,6 +179,7 @@ class SpotController extends BaseApiController
             }
 
             $validated = $request->validated();
+            $validated['admin_id'] = $request->user()->id ?? null;
 
             // ✅ التحقق: لا يمكن تحديث موقف مرتبط بحجز نشط
             $activeBooking = $spot->bookings()
@@ -236,7 +243,11 @@ class SpotController extends BaseApiController
                 );
             }
 
-            DB::transaction(function () use ($spot) {
+            $adminId = request()->user()->id ?? null;
+
+            DB::transaction(function () use ($spot, $adminId) {
+                $spot->admin_id = $adminId;
+                $spot->save();
                 $spot->delete();
             });
 
@@ -279,8 +290,11 @@ class SpotController extends BaseApiController
                 }
             }
 
-            DB::transaction(function () use ($spot, $newStatus) {
+            $adminId = $request->user()->id ?? null;
+
+            DB::transaction(function () use ($spot, $newStatus, $adminId) {
                 $spot->status = $newStatus;
+                $spot->admin_id = $adminId;
                 $spot->save();
             });
 
