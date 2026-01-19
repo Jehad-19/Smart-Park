@@ -217,18 +217,21 @@ class BookingController extends BaseApiController
 
         DB::beginTransaction();
         try {
-            $now = Carbon::now('Africa/Tripoli');
+
+            // Use application timezone and ensure start_time is a Carbon instance
+            $startTime = Carbon::parse($booking->start_time);
+            $now = Carbon::now();
 
             // حساب الفرق بالدقائق
             // موجب = لم يبدأ بعد
             // سالب = بدأ بالفعل
-            $minutesDiff = $now->diffInMinutes($booking->start_time, false);
+            $minutesDiff = $now->diffInMinutes($startTime, false);
 
             Log::info('cancel_attempt', [
                 'booking_id' => $booking->id,
                 'user_id' => auth()->id(),
                 'now' => $now->toDateTimeString(),
-                'start_time' => $booking->start_time?->toDateTimeString(),
+                'start_time' => $startTime->toDateTimeString(),
                 'minutes_diff' => $minutesDiff,
                 'total_price' => $booking->total_price,
                 'booking_started' => $minutesDiff < 0 ? 'YES' : 'NO',
