@@ -192,12 +192,25 @@ class BookingController extends BaseApiController
             // Determine if cancellation happens at least 30 minutes before scheduled start
             $minutesDiff = $now->diffInMinutes($booking->start_time, false);
 
+            Log::info('cancel_attempt', [
+                'booking_id' => $booking->id,
+                'user_id' => auth()->id(),
+                'now' => $now->toDateTimeString(),
+                'start_time' => $booking->start_time?->toDateTimeString(),
+                'minutes_diff' => $minutesDiff,
+                'total_price' => $booking->total_price,
+            ]);
+
             $refunded = false;
             // Only refund when cancelling 30 or more minutes before booking start
             if ($minutesDiff >= 30) {
                 $user = $booking->user;
                 $wallet = $user->wallet;
                 $refundAmount = (float) ($booking->total_price ?? 0);
+                Log::info('refund_check', [
+                    'wallet_present' => $wallet ? true : false,
+                    'refund_amount' => $refundAmount,
+                ]);
 
                 if ($wallet && $refundAmount > 0) {
                     $balanceBefore = $wallet->balance;
@@ -214,7 +227,19 @@ class BookingController extends BaseApiController
                         'description' => "استرداد مبلغ الحجز #{$booking->id}",
                     ]);
 
+                    Log::info('refund_applied', [
+                        'wallet_id' => $wallet->id,
+                        'balance_before' => $balanceBefore,
+                        'balance_after' => $wallet->balance,
+                        'refund_amount' => $refundAmount,
+                    ]);
+
                     $refunded = true;
+                } else {
+                    Log::warning('refund_skipped', [
+                        'booking_id' => $booking->id,
+                        'reason' => !$wallet ? 'no_wallet' : 'zero_amount',
+                    ]);
                 }
             }
 
