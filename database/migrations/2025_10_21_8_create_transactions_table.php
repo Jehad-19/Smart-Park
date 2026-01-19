@@ -21,7 +21,6 @@ return new class extends Migration
             $table->string('reference')->unique()->nullable();
             $table->timestamps();
 
-            $table->softDeletes();
 
 
             $table->index('wallet_id');

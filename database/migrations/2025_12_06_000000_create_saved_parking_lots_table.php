@@ -14,7 +14,6 @@ return new class extends Migration {
             $table->timestamps();
             $table->unique(['user_id', 'parking_lot_id']);
 
-            $table->softDeletes();
         });
     }
 

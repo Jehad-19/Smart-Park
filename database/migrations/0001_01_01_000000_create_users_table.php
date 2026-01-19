@@ -24,7 +24,6 @@ return new class extends Migration
             $table->rememberToken();
             $table->timestamps();
 
-            $table->softDeletes();
 
             // Indexes for performance
             $table->index('email');

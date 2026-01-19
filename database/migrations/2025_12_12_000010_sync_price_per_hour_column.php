@@ -14,7 +14,6 @@ return new class extends Migration
                 $table->decimal('price_per_hour', 8, 2)->nullable()->after('longitude');
             }
 
-            $table->softDeletes();
         });
 
         // Backfill hourly price from legacy per-minute values if present

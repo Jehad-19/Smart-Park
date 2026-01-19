@@ -19,7 +19,6 @@ return new class extends Migration
             $table->timestamp('read_at')->nullable();
             $table->timestamps();
 
-            $table->softDeletes();
         });
     }
 
