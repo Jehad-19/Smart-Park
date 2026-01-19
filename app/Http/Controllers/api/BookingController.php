@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Hash;
 
 use App\Http\Requests\StoreBookingRequest;
 use App\Http\Requests\ScanBookingRequest;
@@ -600,6 +601,217 @@ class BookingController extends BaseApiController
                 'trace' => $e->getTraceAsString()
             ]);
             return $this->sendError('فشل تمديد الحجز', ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Update (edit) a pending booking. Handles vehicle change or time changes.
+     */
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'vehicle_id' => 'sometimes|exists:vehicles,id',
+            'start_time' => 'sometimes|date',
+            'end_time' => 'sometimes|date|after:start_time',
+        ]);
+
+        $user = $request->user();
+
+        $booking = Booking::with(['spot.parkingLot'])
+            ->where('id', $id)
+            ->where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->first();
+
+        if (!$booking) {
+            return $this->sendError('الحجز غير موجود أو غير قابل للتعديل', [], 404);
+        }
+
+        $newStart = $request->has('start_time') ? Carbon::parse($request->input('start_time')) : Carbon::parse($booking->start_time);
+        $newEnd = $request->has('end_time') ? Carbon::parse($request->input('end_time')) : Carbon::parse($booking->end_time);
+
+        // Do not allow changing to past
+        if (now()->gt($newStart)) {
+            return $this->sendError('لا يمكن تحديد وقت بدء في الماضي', [], 422);
+        }
+
+        // Prevent overlap with other bookings on same spot
+        $overlap = Booking::where('spot_id', $booking->spot_id)
+            ->whereIn('status', ['pending', 'active'])
+            ->where('id', '!=', $booking->id)
+            ->where(function ($q) use ($newStart, $newEnd) {
+                $q->whereBetween('start_time', [$newStart, $newEnd])
+                    ->orWhereBetween('end_time', [$newStart, $newEnd])
+                    ->orWhere(function ($qq) use ($newStart, $newEnd) {
+                        $qq->where('start_time', '<', $newStart)
+                            ->where('end_time', '>', $newEnd);
+                    });
+            })
+            ->exists();
+
+        if ($overlap) {
+            return $this->sendError('الوقت المطلوب يتداخل مع حجز آخر لهذا الموقف', [], 400);
+        }
+
+        // Calculate price difference (if times changed)
+        $spot = $booking->spot;
+        $spot->load('parkingLot');
+        $pricePerHour = $spot->parkingLot->price_per_hour ?? null;
+        if ($pricePerHour === null && isset($spot->parkingLot->price_per_minute)) {
+            $pricePerHour = (float) $spot->parkingLot->price_per_minute * 60;
+        }
+
+        $durationMinutesOld = max(1, Carbon::parse($booking->start_time)->diffInMinutes(Carbon::parse($booking->end_time)));
+        $durationMinutesNew = max(1, $newStart->diffInMinutes($newEnd));
+
+        $pricePerMinute = ($pricePerHour ?? 0) / 60;
+        $oldTotal = ($booking->total_price ?? ($durationMinutesOld * $pricePerMinute));
+        $newTotal = $durationMinutesNew * $pricePerMinute;
+        $diff = $newTotal - $oldTotal;
+
+        $wallet = $user->wallet;
+        if ($diff > 0) {
+            if (!$wallet) return $this->sendError('محفظة المستخدم غير موجودة', [], 404);
+            if ($wallet->balance < $diff) {
+                return $this->sendError('الرصيد غير كافٍ لتغطية تكلفة التعديل', [], 400);
+            }
+        }
+
+        DB::beginTransaction();
+        try {
+            // Apply vehicle change if provided
+            if ($request->has('vehicle_id')) {
+                $booking->vehicle_id = $request->input('vehicle_id');
+            }
+
+            // Apply time changes and handle payment/refund
+            if ($request->has('start_time') || $request->has('end_time')) {
+                // If extra cost, deduct; if negative, refund
+                if ($diff > 0) {
+                    $balanceBefore = $wallet->balance;
+                    $wallet->balance -= $diff;
+                    $wallet->save();
+                    Transaction::create([
+                        'wallet_id' => $wallet->id,
+                        'booking_id' => $booking->id,
+                        'type' => 'payment',
+                        'amount' => -$diff,
+                        'balance_before' => $balanceBefore,
+                        'balance_after' => $wallet->balance,
+                        'description' => "تكلفة تعديل حجز #{$booking->id}",
+                    ]);
+                } elseif ($diff < 0) {
+                    // refund the difference
+                    $refund = (float) abs($diff);
+                    if ($wallet && $refund > 0) {
+                        $balanceBefore = $wallet->balance;
+                        $wallet->balance += $refund;
+                        $wallet->save();
+                        Transaction::create([
+                            'wallet_id' => $wallet->id,
+                            'booking_id' => $booking->id,
+                            'type' => 'refund',
+                            'amount' => $refund,
+                            'balance_before' => $balanceBefore,
+                            'balance_after' => $wallet->balance,
+                            'description' => "استرداد مقابل تعديل حجز #{$booking->id}",
+                        ]);
+                    }
+                }
+
+                $booking->start_time = $newStart;
+                $booking->end_time = $newEnd;
+                $booking->total_price = $newTotal;
+            }
+
+            $booking->save();
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'تم تحديث الحجز بنجاح',
+                'booking' => $booking,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('update_booking_failed', ['booking_id' => $id, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return $this->sendError('فشل تحديث الحجز', ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Delete a booking after validating user's password.
+     * Only pending (not started) bookings can be deleted via this endpoint.
+     */
+    public function destroy(Request $request, $id)
+    {
+        $request->validate([
+            'password' => 'required|string',
+        ]);
+
+        $user = $request->user();
+
+        if (!Hash::check($request->input('password'), $user->password)) {
+            return $this->sendError('كلمة المرور غير صحيحة', [], 401);
+        }
+
+        $booking = Booking::where('id', $id)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        // Do not allow deleting active bookings
+        $now = Carbon::now();
+        $start = Carbon::parse($booking->start_time);
+        if ($booking->status === 'active' || $now->gt($start)) {
+            return $this->sendError('لا يمكن حذف الحجز بعد بدء الوقت. الرجاء إلغاء الحجز بدلاً من الحذف.', [], 400);
+        }
+
+        DB::beginTransaction();
+        try {
+            // If pending and not started, refund full amount
+            $refunded = false;
+            $refundAmount = 0;
+            $wallet = $user->wallet;
+            if ($booking->status === 'pending') {
+                $refundAmount = (float) ($booking->total_price ?? 0);
+                if ($wallet && $refundAmount > 0) {
+                    $balanceBefore = $wallet->balance;
+                    $wallet->balance = $balanceBefore + $refundAmount;
+                    $wallet->save();
+
+                    Transaction::create([
+                        'wallet_id' => $wallet->id,
+                        'booking_id' => $booking->id,
+                        'type' => 'refund',
+                        'amount' => $refundAmount,
+                        'balance_before' => $balanceBefore,
+                        'balance_after' => $wallet->balance,
+                        'description' => "استرداد عند حذف الحجز #{$booking->id}",
+                    ]);
+
+                    $refunded = true;
+                }
+            }
+
+            // Free the spot if necessary
+            if ($booking->spot) {
+                $booking->spot->update(['status' => 'available']);
+            }
+
+            $booking->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'تم حذف الحجز بنجاح',
+                'refunded' => $refunded,
+                'refund_amount' => $refundAmount,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('delete_booking_failed', ['booking_id' => $id, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return $this->sendError('فشل حذف الحجز', ['error' => $e->getMessage()], 500);
         }
     }
 }
