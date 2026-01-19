@@ -125,6 +125,17 @@ class BookingController extends BaseApiController
         if (!$wallet) {
             return $this->sendError('محفظة المستخدم غير متوفرة', [], 404);
         }
+        // Log booking attempt details for debugging (user will reproduce and send laravel.log)
+        Log::info('booking_store_attempt', [
+            'user_id' => $user->id,
+            'spot_id' => $request->spot_id,
+            'vehicle_id' => $request->vehicle_id,
+            'start_time' => $startTime->toDateTimeString(),
+            'end_time' => $endTime->toDateTimeString(),
+            'duration_minutes' => $durationMinutes,
+            'total_price' => $totalPrice,
+            'wallet_balance' => $wallet->balance ?? null,
+        ]);
 
         if ($wallet->balance < $totalPrice) {
             return $this->sendError('الرصيد غير كافٍ لإتمام الحجز', [], 400);
@@ -162,6 +173,15 @@ class BookingController extends BaseApiController
                 'description' => "حجز موقف #{$booking->id}",
             ]);
 
+            // Log that payment transaction was recorded
+            Log::info('booking_payment_recorded', [
+                'booking_id' => $booking->id,
+                'wallet_id' => $wallet->id,
+                'amount' => -$totalPrice,
+                'balance_before' => $balanceBefore,
+                'balance_after' => $wallet->balance,
+            ]);
+
             $spot->update(['status' => 'reserved']);
 
             DB::commit();
@@ -173,6 +193,11 @@ class BookingController extends BaseApiController
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('booking_store_failed', [
+                'user_id' => $user->id ?? null,
+                'spot_id' => $request->spot_id ?? null,
+                'error' => $e->getMessage(),
+            ]);
             return response()->json(['message' => 'فشل إنشاء الحجز', 'error' => $e->getMessage()], 500);
         }
     }
