@@ -16,6 +16,9 @@ return new class extends Migration
             $table->string('model')->nullable();
             $table->timestamps();
 
+            $table->softDeletes();
+
+
             $table->index('user_id');
             $table->index('plate_number');
         });

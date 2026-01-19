@@ -24,6 +24,9 @@ return new class extends Migration
             $table->enum('status', ['pending', 'active', 'completed', 'expired', 'canceled'])->default('pending');
             $table->timestamps();
 
+            $table->softDeletes();
+
+
             $table->index('user_id');
             $table->index('spot_id');
             $table->index('vehicle_id');

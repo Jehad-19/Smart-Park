@@ -13,6 +13,8 @@ return new class extends Migration {
             $table->foreignId('parking_lot_id')->constrained()->cascadeOnDelete();
             $table->timestamps();
             $table->unique(['user_id', 'parking_lot_id']);
+
+            $table->softDeletes();
         });
     }
 

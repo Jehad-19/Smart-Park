@@ -21,6 +21,9 @@ return new class extends Migration
             $table->string('reference')->unique()->nullable();
             $table->timestamps();
 
+            $table->softDeletes();
+
+
             $table->index('wallet_id');
             $table->index('booking_id');
             $table->index('type');

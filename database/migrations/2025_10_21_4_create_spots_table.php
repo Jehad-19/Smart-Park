@@ -16,6 +16,9 @@ return new class extends Migration
             $table->enum('status', ['available', 'occupied', 'reserved'])->default('available');
             $table->timestamps();
 
+            $table->softDeletes();
+
+
             $table->unique(['parking_lot_id', 'spot_number']);
             $table->index('status');
             $table->index('type');
