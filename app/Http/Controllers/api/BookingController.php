@@ -187,10 +187,48 @@ class BookingController extends BaseApiController
 
         DB::beginTransaction();
         try {
+            $now = Carbon::now();
+
+            // Determine if cancellation happens at least 30 minutes before scheduled start
+            $minutesDiff = $now->diffInMinutes($booking->start_time, false);
+
+            $refunded = false;
+            // Only refund when cancelling 30 or more minutes before booking start
+            if ($minutesDiff >= 30) {
+                $user = $booking->user;
+                $wallet = $user->wallet;
+                $refundAmount = (float) ($booking->total_price ?? 0);
+
+                if ($wallet && $refundAmount > 0) {
+                    $balanceBefore = $wallet->balance;
+                    $wallet->balance = $balanceBefore + $refundAmount;
+                    $wallet->save();
+
+                    Transaction::create([
+                        'wallet_id' => $wallet->id,
+                        'booking_id' => $booking->id,
+                        'type' => 'refund',
+                        'amount' => $refundAmount,
+                        'balance_before' => $balanceBefore,
+                        'balance_after' => $wallet->balance,
+                        'description' => "استرداد مبلغ الحجز #{$booking->id}",
+                    ]);
+
+                    $refunded = true;
+                }
+            }
+
             $booking->update(['status' => 'canceled']);
             $booking->spot->update(['status' => 'available']);
+
             DB::commit();
-            return response()->json(['message' => 'تم إلغاء الحجز بنجاح']);
+
+            $message = 'تم إلغاء الحجز بنجاح';
+            if ($refunded) {
+                $message .= '، وتمت إعادة المبلغ إلى محفظتك';
+            }
+
+            return response()->json(['message' => $message]);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['message' => 'فشل إلغاء الحجز'], 500);
