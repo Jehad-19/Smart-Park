@@ -208,9 +208,16 @@ class BookingController extends BaseApiController
             ->where('user_id', auth()->id())
             ->firstOrFail();
 
+        // Preliminary log: record cancel call and booking snapshot
+        Log::info('cancel_called', [
+            'booking_id' => $booking->id,
+            'booking_status' => $booking->status,
+            'start_time_raw' => $booking->start_time,
+            'user_id' => auth()->id(),
+        ]);
+
         // Allow cancellation if current time is before the scheduled start time.
-        // Some bookings might have non-'pending' status (edge cases), so use time-based check
-        // to decide refund/allowance rather than strictly requiring 'pending'.
+        // Use precise second-level comparison to avoid edge-case float rounding.
         $nowPre = Carbon::now();
         $startTimePre = Carbon::parse($booking->start_time);
         if ($nowPre->gt($startTimePre)) {
@@ -227,26 +234,26 @@ class BookingController extends BaseApiController
             $startTime = Carbon::parse($booking->start_time);
             $now = Carbon::now();
 
-            // حساب الفرق بالدقائق
-            // موجب = لم يبدأ بعد
-            // سالب = بدأ بالفعل
-            $minutesDiff = $now->diffInMinutes($startTime, false);
+            // حساب الفرق بالثواني والدقائق (دقة أعلى لتفادي حدود التقريب)
+            $secondsDiff = $now->diffInSeconds($startTime, false);
+            $minutesDiff = $secondsDiff / 60; // may be fractional
 
             Log::info('cancel_attempt', [
                 'booking_id' => $booking->id,
                 'user_id' => auth()->id(),
                 'now' => $now->toDateTimeString(),
                 'start_time' => $startTime->toDateTimeString(),
+                'seconds_diff' => $secondsDiff,
                 'minutes_diff' => $minutesDiff,
                 'total_price' => $booking->total_price,
-                'booking_started' => $minutesDiff < 0 ? 'YES' : 'NO',
+                'booking_started' => $secondsDiff < 0 ? 'YES' : 'NO',
             ]);
 
             $refunded = false;
             $refundAmount = 0;
 
-            // ✅ استرجاع المبلغ إذا لم يبدأ الحجز بعد (minutesDiff >= 0)
-            if ($minutesDiff >= 0) {
+            // ✅ استرجاع المبلغ إذا لم يبدأ الحجز بعد (الآن <= وقت البدء)
+            if ($now->lte($startTime)) {
                 $user = $booking->user;
                 $wallet = $user->wallet;
                 $refundAmount = (float) ($booking->total_price ?? 0);
@@ -276,6 +283,7 @@ class BookingController extends BaseApiController
                         'balance_before' => $balanceBefore,
                         'balance_after' => $wallet->balance,
                         'refund_amount' => $refundAmount,
+                        'transaction_type' => 'refund'
                     ]);
 
                     $refunded = true;
@@ -289,6 +297,7 @@ class BookingController extends BaseApiController
                 // الحجز بدأ بالفعل - لا استرجاع
                 Log::warning('refund_denied', [
                     'booking_id' => $booking->id,
+                    'seconds_diff' => $secondsDiff,
                     'minutes_diff' => $minutesDiff,
                     'reason' => 'booking_already_started',
                 ]);
