@@ -40,22 +40,37 @@ class Spot extends Model
     protected static function booted()
     {
         static::creating(function ($model) {
-            if (empty($model->admin_id) && auth()->check()) {
-                $model->admin_id = auth()->id();
+            if (empty($model->admin_id)) {
+                $model->admin_id = self::resolveAdminId();
             }
         });
 
         static::updating(function ($model) {
-            if (auth()->check()) {
-                $model->admin_id = auth()->id();
+            $adminId = self::resolveAdminId();
+            if ($adminId !== null) {
+                $model->admin_id = $adminId;
             }
         });
 
         static::deleting(function ($model) {
-            if (auth()->check()) {
-                $model->admin_id = auth()->id();
+            $adminId = self::resolveAdminId();
+            if ($adminId !== null) {
+                $model->admin_id = $adminId;
                 $model->save();
             }
         });
+    }
+
+    protected static function resolveAdminId(): ?int
+    {
+        if (auth()->guard('admin')->check()) {
+            return auth()->guard('admin')->id();
+        }
+
+        if (auth()->check() && auth()->user() instanceof \App\Models\Admin) {
+            return auth()->id();
+        }
+
+        return null;
     }
 }
