@@ -204,17 +204,24 @@ class BookingController extends BaseApiController
 
     public function cancel($id)
     {
-        $booking = Booking::where('id', $id)->where('user_id', auth()->id())->firstOrFail();
+        $booking = Booking::where('id', $id)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
 
         if ($booking->status !== 'pending') {
-            return response()->json(['message' => 'لا يمكن إلغاء حجز غير معلق'], 400);
+            return response()->json([
+                'success' => false,
+                'message' => 'لا يمكن إلغاء حجز غير معلق'
+            ], 400);
         }
 
         DB::beginTransaction();
         try {
-            $now = Carbon::now();
+            $now = Carbon::now('Africa/Tripoli');
 
-            // Determine if cancellation happens at least 30 minutes before scheduled start
+            // حساب الفرق بالدقائق
+            // موجب = لم يبدأ بعد
+            // سالب = بدأ بالفعل
             $minutesDiff = $now->diffInMinutes($booking->start_time, false);
 
             Log::info('cancel_attempt', [
@@ -224,14 +231,18 @@ class BookingController extends BaseApiController
                 'start_time' => $booking->start_time?->toDateTimeString(),
                 'minutes_diff' => $minutesDiff,
                 'total_price' => $booking->total_price,
+                'booking_started' => $minutesDiff < 0 ? 'YES' : 'NO',
             ]);
 
             $refunded = false;
-            // Only refund when cancelling 30 or more minutes before booking start
-            if ($minutesDiff <= 30) {
+            $refundAmount = 0;
+
+            // ✅ استرجاع المبلغ إذا لم يبدأ الحجز بعد (minutesDiff >= 0)
+            if ($minutesDiff >= 0) {
                 $user = $booking->user;
                 $wallet = $user->wallet;
                 $refundAmount = (float) ($booking->total_price ?? 0);
+
                 Log::info('refund_check', [
                     'wallet_present' => $wallet ? true : false,
                     'refund_amount' => $refundAmount,
@@ -266,6 +277,13 @@ class BookingController extends BaseApiController
                         'reason' => !$wallet ? 'no_wallet' : 'zero_amount',
                     ]);
                 }
+            } else {
+                // الحجز بدأ بالفعل - لا استرجاع
+                Log::warning('refund_denied', [
+                    'booking_id' => $booking->id,
+                    'minutes_diff' => $minutesDiff,
+                    'reason' => 'booking_already_started',
+                ]);
             }
 
             $booking->update(['status' => 'canceled']);
@@ -273,17 +291,37 @@ class BookingController extends BaseApiController
 
             DB::commit();
 
+            // ✅ الرسائل الصحيحة
             $message = 'تم إلغاء الحجز بنجاح';
             if ($refunded) {
                 $message .= '، وتمت إعادة المبلغ إلى محفظتك';
+            } else {
+                $message .= '. لم يتم استرداد المبلغ لأن الحجز قد بدأ بالفعل';
             }
 
-            return response()->json(['message' => $message]);
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'refunded' => $refunded,
+                'refund_amount' => $refundAmount,
+                'minutes_to_start' => max(0, $minutesDiff),
+            ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['message' => 'فشل إلغاء الحجز'], 500);
+            Log::error('cancel_failed', [
+                'booking_id' => $id,
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'فشل إلغاء الحجز',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
+
 
     public function scanEntrance(ScanBookingRequest $request)
     {
