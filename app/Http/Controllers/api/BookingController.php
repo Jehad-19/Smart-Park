@@ -228,7 +228,7 @@ class BookingController extends BaseApiController
 
             $refunded = false;
             // Only refund when cancelling 30 or more minutes before booking start
-            if ($minutesDiff >= 30) {
+            if ($minutesDiff <= 30) {
                 $user = $booking->user;
                 $wallet = $user->wallet;
                 $refundAmount = (float) ($booking->total_price ?? 0);
