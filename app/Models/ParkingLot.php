@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ParkingLot extends Model
 {
-    use HasFactory , SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -81,5 +81,27 @@ class ParkingLot extends Model
     public function admin()
     {
         return $this->belongsTo(Admin::class);
+    }
+
+    protected static function booted()
+    {
+        static::creating(function ($model) {
+            if (empty($model->admin_id) && auth()->check()) {
+                $model->admin_id = auth()->id();
+            }
+        });
+
+        static::updating(function ($model) {
+            if (auth()->check()) {
+                $model->admin_id = auth()->id();
+            }
+        });
+
+        static::deleting(function ($model) {
+            if (auth()->check()) {
+                $model->admin_id = auth()->id();
+                $model->save();
+            }
+        });
     }
 }
