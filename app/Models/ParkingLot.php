@@ -18,6 +18,7 @@ class ParkingLot extends Model
         'longitude',
         'price_per_hour',
         'status',
+        'admin_id',
     ];
 
     protected function casts(): array
@@ -75,5 +76,10 @@ class ParkingLot extends Model
     public function totalSpotsCount()
     {
         return $this->spots()->count();
+    }
+
+    public function admin()
+    {
+        return $this->belongsTo(Admin::class);
     }
 }

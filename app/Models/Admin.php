@@ -24,4 +24,14 @@ class Admin extends Authenticatable
         'password',
         'remember_token',
     ];
+
+    public function parkingLots()
+    {
+        return $this->hasMany(ParkingLot::class);
+    }
+
+    public function spots()
+    {
+        return $this->hasMany(Spot::class);
+    }
 }

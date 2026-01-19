@@ -16,6 +16,7 @@ class Spot extends Model
         'spot_number',
         'type',
         'status',
+        'admin_id',
     ];
 
    
@@ -29,5 +30,10 @@ class Spot extends Model
     public function bookings()
     {
         return $this->hasMany(Booking::class);
+    }
+
+    public function admin()
+    {
+        return $this->belongsTo(Admin::class);
     }
 }

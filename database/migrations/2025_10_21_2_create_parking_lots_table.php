@@ -19,6 +19,8 @@ return new class extends Migration
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
 
+            $table->foreignId('admin_id')->constrained('admins')->cascadeOnDelete();
+
 
 
             $table->index('status');

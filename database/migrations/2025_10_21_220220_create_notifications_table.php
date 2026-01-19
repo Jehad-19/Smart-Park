@@ -19,6 +19,8 @@ return new class extends Migration
             $table->timestamp('read_at')->nullable();
             $table->timestamps();
 
+            $table->foreignId('admin_id')->nullable()->constrained('admins')->nullOnDelete();
+
         });
     }
 

@@ -16,6 +16,7 @@ return new class extends Migration
             $table->enum('status', ['available', 'occupied', 'reserved'])->default('available');
             $table->timestamps();
 
+            $table->foreignId('admin_id')->nullable()->constrained('admins')->nullOnDelete();
 
 
             $table->unique(['parking_lot_id', 'spot_number']);
