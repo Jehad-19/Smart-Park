@@ -208,10 +208,15 @@ class BookingController extends BaseApiController
             ->where('user_id', auth()->id())
             ->firstOrFail();
 
-        if ($booking->status !== 'pending') {
+        // Allow cancellation if current time is before the scheduled start time.
+        // Some bookings might have non-'pending' status (edge cases), so use time-based check
+        // to decide refund/allowance rather than strictly requiring 'pending'.
+        $nowPre = Carbon::now();
+        $startTimePre = Carbon::parse($booking->start_time);
+        if ($nowPre->gt($startTimePre)) {
             return response()->json([
                 'success' => false,
-                'message' => 'لا يمكن إلغاء حجز غير معلق'
+                'message' => 'لا يمكن إلغاء الحجز بعد بدء الوقت'
             ], 400);
         }
 
