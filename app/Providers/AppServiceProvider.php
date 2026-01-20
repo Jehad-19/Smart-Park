@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Admin;
 
@@ -24,6 +25,21 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Force Filament's auth guard for Livewire requests originating from the panel
+        try {
+            if (! $this->app->runningInConsole()) {
+                $request = request();
+                $referer = $request->headers->get('referer', '');
+                $filamentPath = config('filament.path', 'admin');
+
+                if ($request->is('livewire/*') && $referer && (str_contains($referer, '/' . trim($filamentPath, '/')) || str_contains($referer, '/filament'))) {
+                    Auth::shouldUse(config('filament.auth.guard', 'admin'));
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Failed to force filament guard: ' . $e->getMessage());
+        }
+
         // Log failed authentication attempts (helpful for Filament login debugging)
         Event::listen(Failed::class, function (Failed $event) {
             try {
