@@ -18,6 +18,7 @@ class Admin extends Authenticatable
         'phone',
         'employee_number',
         'status',
+        'password',
     ];
 
     protected $hidden = [
@@ -33,5 +34,19 @@ class Admin extends Authenticatable
     public function spots()
     {
         return $this->hasMany(Spot::class);
+    }
+
+    protected $casts = [
+        'password' => 'hashed',
+    ];
+
+    public function getIsActiveAttribute(): bool
+    {
+        return $this->status === 'active';
+    }
+
+    public function setIsActiveAttribute($value)
+    {
+        $this->status = $value ? 'active' : 'inactive';
     }
 }
