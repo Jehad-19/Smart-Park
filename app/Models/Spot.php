@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes; // ← أضف هذا
 
 
-class Spot extends Model
+class Spot extends Model implements 
 {
     use HasFactory, SoftDeletes; // ← أضف SoftDeletes هنا
 
