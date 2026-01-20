@@ -46,7 +46,29 @@ class MakeFilamentUser extends Command
                 label: 'Password',
                 required: true,
             )),
+            'employee_number' => $this->resolveEmployeeNumber(),
         ];
+    }
+
+    protected function resolveEmployeeNumber(): string
+    {
+        $provided = $this->options['employee_number'] ?? null;
+
+        if ($provided) {
+            if (Admin::where('employee_number', $provided)->exists()) {
+                $this->error('An admin with that employee_number already exists.');
+                exit(1);
+            }
+
+            return $provided;
+        }
+
+        // Generate a unique employee number
+        do {
+            $candidate = 'EMP' . now()->format('YmdHis') . rand(10, 99);
+        } while (Admin::where('employee_number', $candidate)->exists());
+
+        return $candidate;
     }
 
     protected function createUser(): Authenticatable
