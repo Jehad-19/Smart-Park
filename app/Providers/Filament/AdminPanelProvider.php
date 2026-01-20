@@ -53,6 +53,7 @@ class AdminPanelProvider extends PanelProvider
                 \App\Http\Middleware\ForceArabicLocale::class,
             ])
             ->authMiddleware([
+                \App\Http\Middleware\ForceFilamentAdminGuard::class,
                 Authenticate::class,
             ]);
     }
