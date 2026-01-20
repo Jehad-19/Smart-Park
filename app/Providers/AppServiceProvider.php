@@ -29,9 +29,17 @@ class AppServiceProvider extends ServiceProvider
                 $guard = $event->guard ?? null;
                 $userClass = is_object($event->user) ? get_class($event->user) : null;
 
+                // Additional runtime config to help debug which guard Filament and auth are using
+                $filamentGuardConfig = config('filament.auth.guard');
+                $authDefault = config('auth.defaults.guard');
+                $authDriver = optional(auth())->getDefaultDriver();
+
                 Log::channel('filament_auth')->warning('Auth failed', [
                     'email' => $email,
                     'guard' => $guard,
+                    'filament_guard_config' => $filamentGuardConfig,
+                    'auth_default_guard' => $authDefault,
+                    'auth_default_driver' => $authDriver,
                     'user_class' => $userClass,
                     'request_path' => request()->path(),
                     'ip' => request()->ip(),
