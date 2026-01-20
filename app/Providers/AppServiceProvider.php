@@ -6,6 +6,8 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Hash;
+use App\Models\Admin;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -34,12 +36,25 @@ class AppServiceProvider extends ServiceProvider
                 $authDefault = config('auth.defaults.guard');
                 $authDriver = optional(auth())->getDefaultDriver();
 
+                // Diagnose whether an Admin exists for the attempted email and whether password matches
+                $adminExists = false;
+                $passwordMatches = null; // null means no password provided in credentials
+                if ($email) {
+                    $admin = Admin::where('email', $email)->first();
+                    $adminExists = $admin !== null;
+                    if ($admin && isset($event->credentials['password'])) {
+                        $passwordMatches = Hash::check($event->credentials['password'], $admin->password);
+                    }
+                }
+
                 Log::channel('filament_auth')->warning('Auth failed', [
                     'email' => $email,
                     'guard' => $guard,
                     'filament_guard_config' => $filamentGuardConfig,
                     'auth_default_guard' => $authDefault,
                     'auth_default_driver' => $authDriver,
+                    'admin_exists' => $adminExists,
+                    'password_matches_admin' => $passwordMatches,
                     'user_class' => $userClass,
                     'request_path' => request()->path(),
                     'ip' => request()->ip(),
