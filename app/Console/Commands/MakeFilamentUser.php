@@ -80,7 +80,7 @@ class MakeFilamentUser extends Command
     {
         $loginUrl = Filament::getLoginUrl();
 
-        $this->components->info('Success! ' . ($user->getAttribute('email') ?? $user->getAttribute('username') ?? 'You') . " may now log in at {$loginUrl}");
+        $this->components->info('Success! ' . ($user->email ?? $user->username ?? 'You') . " may now log in at {$loginUrl}");
     }
 
     public function handle(): int

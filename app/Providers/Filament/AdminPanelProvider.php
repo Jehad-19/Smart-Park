@@ -26,6 +26,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
+            ->authGuard('admin') // 🔥🔥 هذا السطر هو الحل
             ->login()
             ->colors([
                 'primary' => Color::Amber,
