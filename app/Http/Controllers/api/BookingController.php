@@ -416,30 +416,49 @@ class BookingController extends BaseApiController
 
             $user = $booking->user;
 
-            // Deduct from wallet
-            // Assuming user has a wallet relation
+            // Adjust wallet based on difference between actual total and prepaid
             $wallet = $user->wallet;
             if (!$wallet) {
-                // Handle no wallet case, maybe create one or error
-                // For now assuming wallet exists
                 return $this->sendError('محفظة المستخدم غير موجودة', [], 404);
             }
 
-            $balanceBefore = $wallet->balance;
-            $wallet->balance -= $totalPrice;
-            $wallet->save();
-            $balanceAfter = $wallet->balance;
+            $prepaidAmount = (float) ($booking->total_price ?? 0);
+            $difference = $totalPrice - $prepaidAmount;
 
-            // Record transaction
-            Transaction::create([
-                'wallet_id' => $wallet->id,
-                'amount' => -$totalPrice,
-                'type' => 'payment', // or 'withdrawal'
-                'balance_before' => $balanceBefore,
-                'balance_after' => $balanceAfter,
-                'description' => "رسوم موقف للحجز #{$booking->id}",
-                'booking_id' => $booking->id,
-            ]);
+            if ($difference > 0) {
+                if ($wallet->balance < $difference) {
+                    return $this->sendError('الرصيد غير كافٍ لإتمام الخروج', [], 400);
+                }
+
+                $balanceBefore = $wallet->balance;
+                $wallet->balance -= $difference;
+                $wallet->save();
+
+                Transaction::create([
+                    'wallet_id' => $wallet->id,
+                    'amount' => -$difference,
+                    'type' => 'payment',
+                    'balance_before' => $balanceBefore,
+                    'balance_after' => $wallet->balance,
+                    'description' => "فرق تكلفة الحجز #{$booking->id}",
+                    'booking_id' => $booking->id,
+                ]);
+            } elseif ($difference < 0) {
+                $refundAmount = abs($difference);
+                $balanceBefore = $wallet->balance;
+                $wallet->balance += $refundAmount;
+                $wallet->save();
+
+                Transaction::create([
+                    'wallet_id' => $wallet->id,
+                    'amount' => $refundAmount,
+                    'type' => 'refund',
+                    'balance_before' => $balanceBefore,
+                    'balance_after' => $wallet->balance,
+                    'description' => "استرداد فرق تكلفة الحجز #{$booking->id}",
+                    'booking_id' => $booking->id,
+                ]);
+            }
 
             $booking->update([
                 'status' => 'completed',
